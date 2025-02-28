@@ -20,19 +20,13 @@ It's a good practice to create a separate environment for each project to avoid 
 - Download the file MOHID_Preprocessing_environment.yml that contains the specific packages that will be included in the environment you are going to create.
 - Create a new environment named MOHID_Preprocessing_environment:
 
-      conda env create --file MOHID_Preprocessing_environment.yml
+      conda env create --file MOHID_Preprocessing_environment.yaml
   
 **4. Activate the environment:**
 
     conda activate MOHID_Preprocessing_environment
 
-**5. Install Jupyter Notebook:**
-
- - With the environment activated, install Jupyter Notebook using the following command:
-
-       conda install -c conda-forge notebook
-
-**6. Launch Jupyter Notebook:**
+**5. Launch Jupyter Notebook:**
 
 - Once the installation is complete, you can start Jupyter Notebook by running:
 
@@ -40,4 +34,4 @@ It's a good practice to create a separate environment for each project to avoid 
 
 This command will open the Jupyter Notebook interface in your default web browser.
 
-**7. Donwload and open MOHID_Preprocessing.ipynb**
+**6. Open MOHID_Preprocessing.ipynb**
