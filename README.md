@@ -17,8 +17,8 @@ Step-by-Step Guide
 
 It's a good practice to create a separate environment for each project to avoid dependency conflicts.
 
-- Download the file MOHID_Preprocessing_environment.yml that contains the specific packages that will be included in the environment you are going to create.
-- Create a new environment named MOHID_Preprocessing_environment:
+- Download the file yml file (e.g., MOHID_Preprocessing_environment.yml) that contains the specific packages that will be included in the environment you are going to create.
+- Create a new environment named e.g., MOHID_Preprocessing_environment:
 
       conda env create --file MOHID_Preprocessing_environment.yaml
   
