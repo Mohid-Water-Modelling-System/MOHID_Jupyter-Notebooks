@@ -1,0 +1,64 @@
+
+OUTPUT_TIME                  : 0  86400
+SURFACE_OUTPUT_TIME          : 0  3600
+RESTART_FILE_OUTPUT_TIME  : 43200 43200
+RESTART_FILE_OVERWRITE       : 0
+
+!<beginoutput>
+<<beginoutwindow>>
+OUTPUT_TIME_W            : 0 900.
+KLB_KUB_W                : 1 -99
+ILB_IUB_W                : 1 10
+JLB_JUB_W                : 1 10
+<<endoutwindow>>
+!<endoutput>
+
+ADV_METHOD_H                 : 4
+ADV_METHOD_V                 : 4
+TVD_LIMIT_H                  : 4
+TVD_LIMIT_V                  : 4
+
+TIME_SERIE_LOCATION       : ../../GeneralData/TimeSeries/TimeSerieLocation.dat
+
+<beginproperty>
+NAME                         : salinity
+UNITS                        : ºC
+DESCRIPTION                  : salinity
+DEFAULTVALUE                 : 36
+ADVECTION_DIFFUSION          : 1
+DATA_ASSIMILATION            : 1
+DISCHARGES                   : 1
+BOUNDARY_CONDITION           : 4
+TYPE_ZUV                     : z
+INITIALIZATION_METHOD        : HDF
+FIELD4D                      : 1
+SPATIAL_INTERPOL             : 1
+EXTRAPOLATE                  : 1
+OLD                          : 1
+DEFAULTVALUE                 : 34.895
+TIME_SERIE                   : 1
+OUTPUT_HDF                   : 1
+OUTPUT_SURFACE_HDF           : 1
+<endproperty>
+
+
+<beginproperty>
+NAME                         : temperature
+UNITS                        : ºC
+DESCRIPTION                  : temperature
+DEFAULTVALUE                 : 16.
+ADVECTION_DIFFUSION          : 1
+DATA_ASSIMILATION            : 1
+SURFACE_FLUXES               : 1
+DISCHARGES                   : 1
+BOUNDARY_CONDITION           : 4
+TYPE_ZUV                     : z
+FIELD4D                      : 1
+SPATIAL_INTERPOL             : 1
+EXTRAPOLATE                  : 1          
+OLD                          : 1
+DEFAULTVALUE                 : 2.515
+TIME_SERIE                   : 1
+OUTPUT_HDF                   : 1
+OUTPUT_SURFACE_HDF           : 1
+<endproperty>

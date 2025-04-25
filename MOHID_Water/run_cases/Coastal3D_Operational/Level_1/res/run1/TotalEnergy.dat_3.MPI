@@ -1,0 +1,8 @@
+NAME                    : Energy
+LOCALIZATION_I          : -999999
+LOCALIZATION_J          : -999999
+LOCALIZATION_K          : -999999
+ SERIE_INITIAL_DATA      : 2025.  1.  1.  0.  0.  0.0
+TIME_UNITS              : SECONDS
+Seconds KEtotal PEtotal KE PE M V OpenV Level BarotropicKE BaroclinicKE VelMax VelMaxBaroclinic Enstrophy
+ <BeginTimeSerie>
