@@ -1,0 +1,14 @@
+backup_path=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\\BoundaryConditions\\CMEMS\\backup'
+daily=1
+forecast=0
+number_of_runs=2
+refday_to_start=0
+product_id=['cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m', 'cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m', 'cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m', 'cmems_mod_glo_phy_anfc_0.083deg_P1D-m']
+start_depth=0.49402499198913574
+end_depth=0.49402499198913574
+min_lon=-9.552
+max_lon=-8.3559991
+min_lat=41.79
+max_lat=43.2050024
+start_date_str='2025-1-2'
+end_date_str='2025-1-4'

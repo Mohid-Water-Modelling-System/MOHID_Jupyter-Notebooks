@@ -1,0 +1,20 @@
+name: MOHID_Water_environment
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - ipyleaflet
+  - ipywidgets
+  - xarray
+  - matplotlib
+  - pandas
+  - folium
+  - h5py
+  - numpy
+  - requests
+  - tqdm
+  - contextily
+  - copernicusmarine
+  - cdsapi
+  - netCDF4
+  - notebook
