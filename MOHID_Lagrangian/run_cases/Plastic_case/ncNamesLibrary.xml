@@ -3,6 +3,7 @@
 	<variables>
 		<eastward_sea_water_velocity name="u">
 			<variant name="u" comment="used in MOHID" />
+            <variant name="velocity U" comment="used in MOHID" />
 			<variant name="uu" />
 			<variant name="U" />
 			<variant name="uo" comment="used in CMEMS" />
@@ -10,6 +11,7 @@
 		</eastward_sea_water_velocity>
 		<northward_sea_water_velocity name="v">
 			<variant name="v" comment="used in MOHID" />
+            <variant name="velocity V" comment="used in MOHID" />
 			<variant name="vv" />
 			<variant name="V" />
 			<variant name="vo" comment="used in CMEMS" />
@@ -36,8 +38,19 @@
 		</sea_water_salinity>
 		<bathymetry name="bathymetry">
 			<variant name="bathymetry" comment="used in MOHID and CMEMS" />
+			<variant name="Bathymetry" comment="used in MOHID and CMEMS" />
 			<variant name="bathym" />
 		</bathymetry>
+		<openpoints name="openpoints">
+			<variant name="openpoints" comment="used in MOHID" />
+			<variant name="OpenPoints" comment="used in MOHID" />
+			<variant name="OpenPoints3D" comment="used in MOHID" />
+			<variant name="WaterPoints3D" comment="used in MOHID" />
+		</openpoints>
+		<sea_surface_height name="ssh">
+			<variant name="ssh" comment="used in MOHID and CMEMS" />
+			<variant name="water level" comment="used in MOHID" />
+		</sea_surface_height>
         <sea_surface_wave_stokes_drift_x_velocity name="VSDX" comment="used in CMEMS">
                 <variant name="VSDX" comment="used in CMEMS"/>
 		<variant name="vsdx" comment="used in CMEMS"/>
@@ -86,6 +99,8 @@
 			<variant name="DEPTH" />
 			<variant name="level" />
 			<variant name="Level" />
+			<variant name="VerticalZ" />
+			<variant name="Vertical" />
 		</vertical>
 		<time name="time">
 			<variant name="time" />

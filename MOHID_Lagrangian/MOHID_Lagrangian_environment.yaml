@@ -1,0 +1,25 @@
+name: MOHID_Lagrangian_environment_clean
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cartopy
+  - cdsapi
+  - copernicusmarine
+  - dask
+  - descartes
+  - folium
+  - geopandas
+  - h5py
+  - ipyleaflet
+  - ipywidgets
+  - jupyterlab_widgets
+  - matplotlib
+  - netcdf4
+  - notebook
+  - numba
+  - numpy
+  - pandas
+  - tqdm
+  - vtk
+  - xarray
