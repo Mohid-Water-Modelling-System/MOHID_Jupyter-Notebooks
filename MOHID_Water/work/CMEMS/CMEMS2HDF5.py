@@ -164,25 +164,26 @@ def merge_cmems():
 
 
 #####################################################
-#def main_cmems(daily,forecast,number_of_runs,refday_to_start,backup_path,product_id,start_depth,end_depth,min_lon,max_lon,min_lat,max_lat,start_date,end_date):
-
-start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
 if forecast == 1:
 
-        initial_date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min) + datetime.timedelta(days = refday_to_start)
-        
+        start_date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min) + datetime.timedelta(days = refday_to_start)
+        runs = number_of_runs
+        daily = 1
 else:
-        interval = end_date - start_date
-        number_of_runs = interval.days
-        initial_date = datetime.datetime.combine(start_date, datetime.time.min)
+        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
         
-for run in range (0,number_of_runs):    
+        if daily == 1:
+            interval = end_date - start_date
+            runs = interval.days
+        else:
+            runs = 1
+        
+for run in range (0, runs):    
 
         #Update dates
         if daily == 1:
-            next_start_date, next_end_date = next_date(run, initial_date)
+            next_start_date, next_end_date = next_date(run, start_date)
         else:
             next_start_date = start_date
             next_end_date = end_date

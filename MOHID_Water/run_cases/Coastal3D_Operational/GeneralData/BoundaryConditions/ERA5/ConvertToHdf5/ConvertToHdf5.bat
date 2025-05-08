@@ -1,2 +1,0 @@
-ConvertToHdf5.exe
-pause

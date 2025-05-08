@@ -1,0 +1,176 @@
+
+<begin_file>
+
+ACTION : CONVERT NETCDF CF TO HDF5 MOHID
+HDF5_OUT : 1
+OUTPUTFILENAME            : Meteo_avg.hdf5
+
+<<begin_time>>
+NETCDF_NAME               : valid_time
+<<end_time>>
+
+<<begin_grid>>
+NETCDF_NAME_LAT : latitude
+NETCDF_NAME_LONG : longitude
+NETCDF_NAME_MAPPING : avg_sdswrf
+MAPPING_LIMIT : -32766
+<<end_grid>>
+
+PROPERTIES_NUMBER : 1
+
+!<<begin_field>>
+NETCDF_NAME              : d2m
+NAME                     : dew point
+UNITS                    : degrees
+DESCRIPTION              : MOHID
+DIM                      :  2
+UNITS_ADD                : -273.15
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : t2m
+NAME                     : air temperature
+UNITS                    : degrees
+DESCRIPTION              : MOHID
+DIM                      :  2
+UNITS_ADD                : -273.15
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : rh2m
+NAME                     : relative humidity
+UNITS                    : -
+DESCRIPTION              : MOHID
+DIM                      :  2
+RELATIVE_HUMIDITY_V2     : 1
+TEMPERATURE_RH           : air temperature
+DEW_POINT_RH             : dew point
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : u10
+NAME                     : wind velocity X
+UNITS                    : m/s
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : v10
+NAME                     : wind velocity Y
+UNITS                    : m/s
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : wind_velocity
+NAME                     : wind velocity
+UNITS                    : m/s
+DESCRIPTION              : MOHID
+DIM                      :  2
+VECTOR_INTENSITY         : 1
+VECTOR_X                 : wind velocity X
+VECTOR_Y                 : wind velocity Y
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : blh
+NAME                     : pbl height
+UNITS                    : m
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : fal
+NAME                     : albedo
+UNITS                    : m
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : aluvp
+NAME                     : albedo
+UNITS                    : m
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : iews
+NAME                     : wind stress X
+UNITS                    : Pa
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : inss
+NAME                     : wind stress Y
+UNITS                    : Pa
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : wind_stress
+NAME                     : wind stress
+UNITS                    : Pa
+DESCRIPTION              : MOHID
+DIM                      :  2
+VECTOR_INTENSITY         : 1
+VECTOR_X                 : wind stress X
+VECTOR_Y                 : wind stress Y
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : msl
+NAME                     : atmospheric pressure
+UNITS                    : Pa
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+<<begin_field>>
+NETCDF_NAME              : avg_sdswrf
+!NETCDF_NAME              : ssrd
+NAME                     : solar radiation
+UNITS                    : Wm-2
+DESCRIPTION              : MOHID
+DIM                      :  2
+!UNITS_SCALE              : 2.7778E-04									 
+<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : strd
+NAME                     : downward long wave radiation
+UNITS                    : Wm-2
+DESCRIPTION              : MOHID
+DIM                      :  2
+UNITS_SCALE              : 2.7778E-04									 
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : tcc
+NAME                     : cloud cover
+UNITS                    : Wm-2
+DESCRIPTION              : MOHID
+DIM                      :  2
+!<<end_field>>
+
+!<<begin_field>>
+NETCDF_NAME              : tp
+NAME                     : precipitation
+UNITS                    : mm/hour
+DESCRIPTION              : MOHID
+DIM                      :  2
+UNITS_SCALE              : 1000
+!<<end_field>>
+
+<<begin_input_files>>
+data_stream-oper_stepType-avg.nc
+<<end_input_files>>
+
+<end_file>

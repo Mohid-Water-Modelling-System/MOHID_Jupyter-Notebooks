@@ -1,0 +1,11 @@
+backup_path=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\\BoundaryConditions\\ERA5\\backup'
+daily=0
+forecast=0
+number_of_runs=1
+refday_to_start=0
+min_lon=-41.75
+max_lon=-29.861143000000098
+min_lat=-6.95
+max_lat=0.9666458999999694
+start_date_str='2025-1-1'
+end_date_str='2025-1-5'
