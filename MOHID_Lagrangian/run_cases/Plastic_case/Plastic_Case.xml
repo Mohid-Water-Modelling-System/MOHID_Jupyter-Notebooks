@@ -2,11 +2,11 @@
 <case>
 	<execution>
 		<parameters>
-		    <parameter key="Start" value="2020 11 01 00 00 00" comment="Date of initial instant" units_comment="space delimited ISO 8601 format up to seconds"/>
-		    <parameter key="End" value="2020 11 02 00 00 00" comment="Date of final instant" units_comment="ISO format"/>
+		    <parameter key="Start" value="2025 01 01 00 00 00" comment="Date of initial instant" units_comment="space delimited ISO 8601 format up to seconds"/>
+		    <parameter key="End" value="2025 01 05 00 00 00" comment="Date of final instant" units_comment="ISO format"/>
 		    <parameter key="Integrator" value="2" comment="Integration Algorithm 1:Euler, 2:Multi-Step Euler, 3:RK4 (default=1)"/>
 		    <parameter key="Threads" value="auto" comment="Computation threads for shared memory computation (default=auto)"/>
-		    <parameter key="OutputWriteTime" value="3600" comment="Time out data (1/Hz)" units_comment="seconds"/>
+		    <parameter key="OutputWriteTime" value="86400" comment="Time out data (1/Hz)" units_comment="seconds"/>
 		    <parameter key="BufferSize" value="86400" comment="Optional parameter. Controls input frequency" units_comment="seconds"/>
 		</parameters>
 		<outputFields>
@@ -18,14 +18,15 @@
 	</execution>
 	<caseDefinitions>
 		<inputData>
-			<inputDataDir name="Boundary_Conditions" type="hydrodynamic"/>
+			<inputDataDir name="nc_fields/currents" type="hydrodynamic"/>
+			<!--inputDataDir name="nc_fields/winds" type="meteorology"/> -->
             <!-- <inputDataDir name="nc_fields/hydrodynamic" type="waterProperties"/> -->
 		</inputData>
 		<simulation>
 		    <resolution dp="8000" units_comment="metres (m)"/>
 		    <timestep dt="180" units_comment="seconds (s)"/>
-		    <BoundingBoxMin x="-100.00000" y="0.00000" z="-1.00000" units_comment="(deg,deg,m)"/>
-		    <BoundingBoxMax x="20.00000" y="70.00000" z="1.00000" units_comment="(deg,deg,m)"/>
+		    <BoundingBoxMin x="-16.41666" y="36.33334" z="-1.00000" units_comment="(deg,deg,m)"/>
+		    <BoundingBoxMax x="-6.33333" y="46.50000" z="1.00000" units_comment="(deg,deg,m)"/>
 		    <VerticalVelMethod value="3" comment="1:From velocity fields, 2:Divergence based, 3:Disabled. Default = 1"/>
 		    <BathyminNetcdf value="0" comment="bathymetry is a property in the netcdf. 1:true, 0:false (computes from layer depth and openPoints). Default = 1"/>
 		    <RemoveLandTracer value="0" comment="Remove tracers on land 0:No, 1:Yes. Default = 1"/>
@@ -33,10 +34,10 @@
 		</simulation>
 		<sourceDefinitions>
 		    <source>
-		        <setsource id="0" name="Amazon_Delta"/>
-		        <rate_seconds value="900" comment="emission step in seconds. 3600 is a tracer per hour"/>
+		        <setsource id="0" name="S0"/>
+		        <rate_seconds value="3600" comment="emission step in seconds. 3600 is a tracer per hour"/>
 		        <rate_trcPerEmission value="5" comment="number of tracers emited every rate_seconds. 5 is a 5 tracers per rate_seconds"/>
-		        <point x="-48.31914" y="2.10472" z="0" units_comment="(deg,deg,m)"/>
+		        <point x="-11.76250" y="41.76526" z="0" units_comment="(deg,deg,m)"/>
 		    </source>
 		</sourceDefinitions>
 		<sourceTypes>
