@@ -85,7 +85,7 @@ DIM                      :  2
 <<begin_field>>
 NETCDF_NAME              : fal
 NAME                     : albedo
-UNITS                    : m
+UNITS                    : -
 DESCRIPTION              : MOHID
 DIM                      :  2
 <<end_field>>

@@ -1,0 +1,15 @@
+dir_path=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\BoundaryConditions\ERA5\backup\20250101_20250106'
+hdf5_file=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\BoundaryConditions\ERA5\backup\20250101_20250106\Meteo.hdf5'
+variable='wind velocity'
+label='Wind Velocity(m/s)'
+variable_vector=['wind velocity X', 'wind velocity Y']
+show_vectors=True
+save_frames=True
+skip_time=3
+extent_cells=1
+increase_zoom_level=1
+skip_vector=1
+vector_scale=250
+vector_color='white'
+transparency_factor=0.5
+dpi=150

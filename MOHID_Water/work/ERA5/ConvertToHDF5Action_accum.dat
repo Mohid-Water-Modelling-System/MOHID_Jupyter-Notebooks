@@ -154,7 +154,7 @@ UNITS_SCALE              : 2.7778E-04
 !<<begin_field>>
 NETCDF_NAME              : tcc
 NAME                     : cloud cover
-UNITS                    : Wm-2
+UNITS                    : -
 DESCRIPTION              : MOHID
 DIM                      :  2
 !<<end_field>>

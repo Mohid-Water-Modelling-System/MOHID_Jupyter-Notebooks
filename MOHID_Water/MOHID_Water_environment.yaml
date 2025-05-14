@@ -3,18 +3,21 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - ipyleaflet
-  - ipywidgets
-  - xarray
-  - matplotlib
-  - pandas
-  - folium
-  - h5py
-  - numpy
-  - requests
-  - tqdm
+  - cdsapi
   - contextily
   - copernicusmarine
-  - cdsapi
-  - netCDF4
+  - folium
+  - h5py
+  - ipyleaflet
+  - ipywidgets
+  - matplotlib
+  - netcdf4
   - notebook
+  - numpy
+  - pandas
+  - requests
+  - tqdm
+  - xarray
+  - cartopy
+  - scipy
+  - imageio-ffmpeg

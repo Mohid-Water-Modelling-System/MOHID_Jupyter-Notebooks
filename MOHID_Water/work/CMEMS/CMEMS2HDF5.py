@@ -1,6 +1,9 @@
+import importlib
+import Input_CMEMS2HDF5
+importlib.reload(Input_CMEMS2HDF5)
+from Input_CMEMS2HDF5 import *
 import os
 import datetime
-from Input_CMEMS2HDF5 import *
 import copernicusmarine
 import shutil
 import subprocess
