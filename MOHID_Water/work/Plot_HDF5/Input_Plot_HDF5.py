@@ -1,7 +1,8 @@
-dir_path=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\BoundaryConditions\ERA5\backup\20250101_20250106'
-hdf5_file=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\BoundaryConditions\ERA5\backup\20250101_20250106\Meteo.hdf5'
-variable='wind velocity'
-label='Wind Velocity(m/s)'
+dir_path=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup\ERA5//20250106_20250107'
+hdf5_file=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup\ERA5//20250106_20250107\Meteo.hdf5'
+hdf5_file_vectors=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup\ERA5//20250106_20250107\Meteo.hdf5'
+variable='air temperature'
+label='Temperature(°C)'
 variable_vector=['wind velocity X', 'wind velocity Y']
 show_vectors=True
 save_frames=True

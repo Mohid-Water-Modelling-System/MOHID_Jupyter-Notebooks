@@ -1,0 +1,16 @@
+backup_dir=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup'
+dir_meteo=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup\ERA5'
+dir_hydro=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\backup\CMEMS'
+boundary_conditions_dir=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\GeneralData\BoundaryConditions'
+exe_dir=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\Level_1/exe'
+data_dir=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\Level_1/data'
+results_dir=r'C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Water\run_cases\Coastal3D_Operational\Level_1/res'
+file_name_meteo=r'Meteo.hdf5'
+file_hydro=r'CMEMS.hdf5'
+continuous=0
+daily=0
+forecast=0
+number_of_runs=1
+refday_to_start=0
+start_date_str='2025-1-1'
+end_date_str='2025-1-6'

@@ -35,7 +35,7 @@ INITIALIZATION_METHOD        : HDF
 FIELD4D                      : 1
 SPATIAL_INTERPOL             : 1
 EXTRAPOLATE                  : 1
-FILENAME                     : ../../GeneralData/BoundaryConditions/CMEMS/CMEMS.hdf5
+FILENAME                     : ../../GeneralData/BoundaryConditions/ocean.hdf5
 DEFAULTVALUE                 : 34.895
 TIME_SERIE                   : 1
 OUTPUT_HDF                   : 1
@@ -58,7 +58,7 @@ INITIALIZATION_METHOD        : HDF
 FIELD4D                      : 1
 SPATIAL_INTERPOL             : 1
 EXTRAPOLATE                  : 1          
-FILENAME                     : ../../GeneralData/BoundaryConditions/CMEMS/CMEMS.hdf5
+FILENAME                     : ../../GeneralData/BoundaryConditions/ocean.hdf5
 DEFAULTVALUE                 : 2.515
 TIME_SERIE                   : 1
 OUTPUT_HDF                   : 1

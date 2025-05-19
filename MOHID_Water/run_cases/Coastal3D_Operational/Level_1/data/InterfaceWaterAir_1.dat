@@ -21,7 +21,7 @@ FILE_IN_TIME              : HDF
 FIELD4D                   : 1
 SPATIAL_INTERPOL          : 1
 EXTRAPOLATE               : 1
-FILENAME                  : ../../GeneralData/BoundaryConditions/ERA5/Meteo.hdf5
+FILENAME                  : ../../GeneralData/BoundaryConditions/meteo.hdf5
 DEFAULTVALUE              : 0.05
 TIME_SERIE                : 0
 OUTPUT_HDF                : 0
@@ -107,7 +107,7 @@ FILE_IN_TIME            : HDF
 FIELD4D                 : 1
 SPATIAL_INTERPOL        : 1
 EXTRAPOLATE             : 1
-FILENAME                : ../../GeneralData/BoundaryConditions/ERA5/Meteo.hdf5
+FILENAME                : ../../GeneralData/BoundaryConditions/meteo.hdf5
 DEFAULTVALUE            : 0.
 TIME_SERIE              : 0
 OUTPUT_HDF              : 0

@@ -68,7 +68,10 @@ with h5py.File(hdf5_file, 'r') as ah:
         waterpoints_is_3d = False
     elif "WaterPoints3D" in ah["Grid"]:
         water_points_3d = np.squeeze(ah["Grid"]["WaterPoints3D"][:])
-        water_points = water_points_3d[-1, :, :]  # Use the last vertical layer
+        if water_points_3d.ndim == 3:
+            water_points = water_points_3d[-1, :, :]  # Use the last vertical layer
+        else:
+            water_points = water_points_3d  # Already 2D; no further indexing needed
         waterpoints_is_3d = True
     else:
         raise ValueError("Neither WaterPoints2D nor WaterPoints3D found in the HDF5 file.")
@@ -79,8 +82,6 @@ with h5py.File(hdf5_file, 'r') as ah:
     
     frames_data = []   # Main variable frames (e.g., wind velocity)
     time_titles = []   # Time stamps for each frame
-    U_frames = []      # Wind x-component frames
-    V_frames = []      # Wind y-component frames
     
     for tkey in time_keys:
         # Create a human-readable timestamp
@@ -97,22 +98,58 @@ with h5py.File(hdf5_file, 'r') as ah:
             temp_data = temp_data[-1, :, :]
         masked_data = np.where(water_points == 0, np.nan, temp_data)
         frames_data.append(masked_data)
-        
-        # Extract wind velocity components
-        U_key = f"{variable_vector[0]}_{instant}"
-        V_key = f"{variable_vector[1]}_{instant}"
-        U_data = np.squeeze(ah["Results"][variable_vector[0]][U_key][:])
-        V_data = np.squeeze(ah["Results"][variable_vector[1]][V_key][:])
-        if waterpoints_is_3d and U_data.ndim > 2:
-            U_data = U_data[-1, :, :]
-        if waterpoints_is_3d and V_data.ndim > 2:
-            V_data = V_data[-1, :, :]
-        U_masked = np.where(water_points == 0, np.nan, U_data)
-        V_masked = np.where(water_points == 0, np.nan, V_data)
-        
-        U_frames.append(U_masked)
-        V_frames.append(V_masked)
 
+    if show_vectors:
+        with h5py.File(hdf5_file_vectors, 'r') as ah:
+            # Read grid boundaries
+            Y = ah["Grid"]["Latitude"][:]    # e.g., shape (47, 31)
+            X = ah["Grid"]["Longitude"][:]     # e.g., shape (47, 31)
+            
+            # Check if a 2D or 3D water mask exists
+            if "WaterPoints2D" in ah["Grid"]:
+                water_points = np.squeeze(ah["Grid"]["WaterPoints2D"][:])
+                waterpoints_is_3d = False
+            elif "WaterPoints3D" in ah["Grid"]:
+                water_points_3d = np.squeeze(ah["Grid"]["WaterPoints3D"][:])
+                if water_points_3d.ndim == 3:
+                    water_points = water_points_3d[-1, :, :]  # Use the last vertical layer
+                else:
+                    water_points = water_points_3d  # Already 2D; no further indexing needed
+                waterpoints_is_3d = True
+            else:
+                raise ValueError("Neither WaterPoints2D nor WaterPoints3D found in the HDF5 file.")
+            
+            # Sample every nth time step
+            time_keys = sorted(list(ah["Time"].keys()))
+            time_keys = time_keys[::skip_time]
+            
+            time_titles = []   # Time stamps for each frame
+            U_frames = []      # Wind x-component frames
+            V_frames = []      # Wind y-component frames
+            
+            for tkey in time_keys:
+                # Create a human-readable timestamp
+                d = list(ah["Time"][tkey])
+                dt = datetime.datetime(int(d[0]), int(d[1]), int(d[2]), int(d[3]), int(d[4]))
+                time_titles.append(dt.strftime("%d/%m/%Y %H:%M"))
+                
+                instant = tkey.split("_")[1]
+                
+                # Extract vector components
+                U_key = f"{variable_vector[0]}_{instant}"
+                V_key = f"{variable_vector[1]}_{instant}"
+                U_data = np.squeeze(ah["Results"][variable_vector[0]][U_key][:])
+                V_data = np.squeeze(ah["Results"][variable_vector[1]][V_key][:])
+                if waterpoints_is_3d and U_data.ndim > 2:
+                    U_data = U_data[-1, :, :]
+                if waterpoints_is_3d and V_data.ndim > 2:
+                    V_data = V_data[-1, :, :]
+                U_masked = np.where(water_points == 0, np.nan, U_data)
+                V_masked = np.where(water_points == 0, np.nan, V_data)
+                
+                U_frames.append(U_masked)
+                V_frames.append(V_masked)
+        
 # ============================
 # CALCULATE THE EXTENT AND ZOOM LEVEL
 # ============================
