@@ -31,6 +31,8 @@ rivers = 0
 send_ftp = 0
 telegram_messages = 0
 model_name = ""
+
+timeseries_backup = 0
 #####################################################
 def next_date (run,initial_date):
          
@@ -70,102 +72,113 @@ def copy_initial_files():
       2. Clears any existing '.fin*' files in the destination directory.
       3. Copies '.fin*' files from the matching backup directory to the destination.
       4. Renames files in the destination ending with '_2.fin*' to use '_1.fin*' instead.
-    
-    Returns:
-        bool: True if the process completes successfully; otherwise, False.
+
     """
+
+
+    # Format the date string to match the naming convention.
+    date_str = old_end_date.strftime("%Y%m%d")
+
+    # Build a source directory pattern.
+    # Note: This creates a glob pattern that matches any directory name ending with '_YYYYMMDD'
+    source_dir = os.path.join(backup_dir, "*_" + date_str)
+
+    dest_dir = results_dir
+
+    # Remove existing '.fin*' files in the destination directory.
+    dest_fin_files = glob.glob(os.path.join(dest_dir, "*.fin*"))
+    for filepath in dest_fin_files:
+        os.remove(filepath)
+
+    # Initialize an empty list to hold the source '.fin*' files we want to copy.
+    source_fin_files = []
+
+    # Try to match the pattern '*_2.fin*' in the source directory pattern.
+    fin2 = glob.iglob(os.path.join(source_dir, "*_2.fin*"))
     try:
-        # Format the date string to match naming convention.
-        date_str = old_end_date.strftime("%Y%m%d")
-        # Build a pattern, e.g., "/path/to/backup/level0/*_20250516"
-        pattern = os.path.join(backup_dir, "*_" + date_str)
-        matching_dirs = glob.glob(pattern)
-        
-        if not matching_dirs:
-            logging.warning("No directory matching pattern '%s' found in backup directory '%s'.",
-                            pattern, backup_dir)
-            return False
-        
-        # Use the first matching directory. Adjust if you want to process all matches.
-        source_dir = matching_dirs[0]
-        logging.info("Using source directory: %s", source_dir)
-        
-        dest_dir = results_dir
-        if not os.path.exists(dest_dir):
-            logging.error("Destination directory '%s' does not exist.", dest_dir)
-            return False
-        
-        # Remove existing '.fin*' files in the destination directory.
-        dest_fin_files = glob.glob(os.path.join(dest_dir, "*.fin*"))
-        for filepath in dest_fin_files:
-            try:
-                os.remove(filepath)
-                logging.info("Removed file: %s", filepath)
-            except Exception as e:
-                logging.error("Error removing file '%s': %s", filepath, e)
-        
-        # Copy '.fin*' files from the source directory to the destination directory.
-        source_fin_files = glob.iglob(os.path.join(source_dir, "*.fin*"))
+        first_item = next(fin2)  # Ensure at least one file exists
+        # Combine the first file with the rest of the iterator results.
+        source_fin_files = [first_item] + list(fin2)
+    except StopIteration:
+        # If no '*_2.fin*' files are found, try matching the '*_1.fin*' pattern.
+        fin1 = glob.iglob(os.path.join(source_dir, "*_1.fin*"))
+        try:
+            first_item = next(fin1)
+            source_fin_files = [first_item] + list(fin1)
+        except StopIteration:
+            print("No initial files found. Define continuos = 0.")
+
+    # Only proceed with copying if found any files.
+    if source_fin_files:
         for file in source_fin_files:
+            # Confirm that the found item is actually a file.
             if os.path.isfile(file):
                 try:
                     shutil.copy(file, dest_dir)
-                    logging.info("Copied file: %s to %s", file, dest_dir)
+                    print(f"Copied {file} to {dest_dir}")
                 except Exception as e:
-                    logging.error("Error copying file '%s' to '%s': %s", file, dest_dir, e)
-        
-        # Rename files in the destination directory from '_2.fin' to '_1.fin'
-        dest_two_fin_files = glob.iglob(os.path.join(dest_dir, "*_2.fin*"))
-        for file in dest_two_fin_files:
-            if os.path.isfile(file):
-                new_name = file.replace("_2.fin", "_1.fin")
-                try:
-                    os.rename(file, new_name)
-                    logging.info("Renamed file '%s' to '%s'", file, new_name)
-                except Exception as e:
-                    logging.error("Error renaming file '%s' to '%s': %s", file, new_name, e)
-        
-        logging.info("File copy and renaming complete")
-        return True
-    
-    except Exception as e:
-        logging.exception("An error occurred during file processing: %s", e)
-        return False
+                    print(f"Error copying {file}: {e}")
+
+    # Rename files in the destination directory from '_2.fin' to '_1.fin'.
+    dest_two_fin_files = glob.iglob(os.path.join(dest_dir, "*_2.fin*"))
+    for file in dest_two_fin_files:
+        if os.path.isfile(file):
+            new_name = file.replace("_2.fin", "_1.fin")
+            try:
+                os.rename(file, new_name)
+                print(f"Renamed {file} to {new_name}")
+            except Exception as e:
+                print(f"Error renaming {file}: {e}")
 
 #####################################################
+
 def backup():
+    # Construct backup directory name using os.path.join() and appropriate formatting
+    backup_dir_date = os.path.join(
+        backup_dir,
+        f"{next_start_date.strftime('%Y%m%d')}_{next_end_date.strftime('%Y%m%d')}"
+    )
     
-    backup_dir_date = (backup_dir+"//"+str(next_start_date.strftime("%Y%m%d")) + "_" + str(next_end_date.strftime("%Y%m%d")))
-        
+    # Create backup directory if it doesn't exist
     if not os.path.exists(backup_dir_date):
         os.makedirs(backup_dir_date)
-        
-    os.chdir(results_dir)
+        print(f"Created backup directory: {backup_dir_date}")
     
-    files = glob.glob("MPI*.*")
-    for file in files:
+    # Remove all MPI*.* files in the results_dir using absolute paths
+    mpi_files = glob.glob(os.path.join(results_dir, "MPI*.*"))
+    for file in mpi_files:
         os.remove(file)
-        
-    files = glob.iglob(os.path.join(results_dir,"*.hdf*"))
-    for file in files:
-        shutil.copy(file, backup_dir_date)
-        os.remove(file)
-        
-    files = glob.iglob(os.path.join(results_dir,"*_2.fin*"))
-    for file in files:
-        shutil.copy(file, backup_dir_date)
 
-    files = glob.iglob(os.path.join(results_dir,"*.fin*"))
-    for file in files:
+    # Process '*.hdf*' files: copy them to backup and then remove them from results_dir
+    hdf_files = glob.iglob(os.path.join(results_dir, "*.hdf*"))
+    for file in hdf_files:
+        shutil.copy(file, backup_dir_date)
+        print(f"Copied HDF file: {file} to {backup_dir_date}")
         os.remove(file)
     
+    # Determine the pattern based on the 'continuous' flag
+    fin_pattern = "*_1.fin*" if continuous == 0 else "*_2.fin*"
+    fin_files = glob.iglob(os.path.join(results_dir, fin_pattern))
+    
+    # Copy the designated '.fin*' files to the backup directory
+    for file in fin_files:
+        shutil.copy(file, backup_dir_date)
+        print(f"Copied fin file: {file} to {backup_dir_date}")
+
+    # Remove all '*.fin*' files from results_dir
+    all_fin_files = glob.iglob(os.path.join(results_dir, "*.fin*"))
+    for file in all_fin_files:
+        os.remove(file)
+   
+    # If timeseries backup is enabled, copy files from the appropriate run directory
     if timeseries_backup == 1:
-        timeseries_dir = results_dir+ "//run2"
-        os.chdir(timeseries_dir)
-        files = glob.iglob(os.path.join(timeseries_dir,"*.*"))
-        for file in files:
+        # Use os.path.join to create the timeseries directory
+        run_subdir = "run1" if continuous == 0 else "run2"
+        timeseries_dir = os.path.join(results_dir, run_subdir)
+        ts_files = glob.iglob(os.path.join(timeseries_dir, "*.*"))
+        for file in ts_files:
             shutil.copy(file, backup_dir_date)
-
+            print(f"Copied timeseries file: {file} to {backup_dir_date}")
 #####################################################
 def convert(date, hdf_file):
         
@@ -270,6 +283,7 @@ for run in range (0,runs):
         if f_size > f_min_hydro:
             destination_file = os.path.join(boundary_conditions_dir, "ocean.hdf5")
             shutil.copy(f_hydro, destination_file)
+            print("Get oceanic boundary conditions from: " + f_hydro)
         else:
             msg = "Message from XMART: model " + model_name + "\nHydrodynamic BC file is too small for " + str(next_start_date.strftime("%Y%m%d"))
             telegram_msg(msg)
@@ -338,6 +352,19 @@ for run in range (0,runs):
 
     #Run
     os.chdir(exe_dir)
+    
+    with open("Tree.dat","w") as file:
+        file.write("Automatic Generated Tree File\n")
+        file.write("by MOHID_Jupyter-Notebooks\n")
+        file.write(rf"+..\exe : {np}")
+
+    with open("run.bat","w") as file:
+        # Write the mpiexec command. The inner quotes around {release} ensure the file path is enclosed in quotes.
+        file.write(rf'mpiexec -np {np} "{release}" >> mohid.log 2>&1' + "\n")
+        # Write the DomainConsolidation command, also enclosed in quotes.
+        file.write(rf'"{DomainConsolidation}"')
+
+    os.remove("mohid.log")   
     output = subprocess.call([exe_dir+"/run.bat"])
     #output = subprocess.call([exe_dir+"/run.sh"])
     

@@ -14,9 +14,6 @@ SPONGE_EVOLUTION        : 2
 
 MODTURB                  : turbulence_equation
 
-RESTART_FILE_OUTPUT_TIME  : 43200 43200
-RESTART_FILE_OVERWRITE   : 0
-
 CONTINUOUS               : 0
  
 
