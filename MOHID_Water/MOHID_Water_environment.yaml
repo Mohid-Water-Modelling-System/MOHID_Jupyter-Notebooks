@@ -21,3 +21,5 @@ dependencies:
   - cartopy
   - scipy
   - imageio-ffmpeg
+  - dash
+  - geoglows
