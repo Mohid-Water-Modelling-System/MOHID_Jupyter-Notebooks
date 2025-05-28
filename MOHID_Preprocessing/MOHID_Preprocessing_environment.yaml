@@ -8,6 +8,7 @@ dependencies:
   - ipyleaflet
   - ipywidgets
   - matplotlib
+  - notebook
   - numpy
   - pandas
   - pillow
@@ -15,4 +16,4 @@ dependencies:
   - requests
   - scipy
   - shapely
-  - notebook
+  - fiona
