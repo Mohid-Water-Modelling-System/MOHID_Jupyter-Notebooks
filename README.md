@@ -1,37 +1,58 @@
-Jupyter Notebooks are tools for interactive computing. Here’s a step-by-step guide on how to use MOHID Jupyter Notebooks.
-
-Step-by-Step Guide
+Below is a step‐by‐step guide on how to set up and launch MOHID Jupyter Notebooks for interactive computing:
 
 **1. Download and Install Miniconda:**
 
-- Go to the [Miniconda download page](https://docs.anaconda.com/miniconda/install/).
+- Visit the [Miniconda download page](https://docs.anaconda.com/miniconda/install/).
 - Download the Miniconda installer for your operating system (Windows, macOS, or Linux).
 - Follow the installation instructions to install Miniconda on your system.
 
 **2. Open the Terminal or Command Prompt:**
 
-- On Windows: Open the Anaconda Prompt or Command Prompt.
-- On macOS and Linux: Open the Terminal.
+- Windows: Open the Anaconda Prompt or Command Prompt.
+- macOS/Linux: Open your preferred Terminal application.
+
 
 **3. Create a Conda Environment:**
 
-It's a good practice to create a separate environment for each project to avoid dependency conflicts.
+It's best practice to use a dedicated environment for each project. To create the MOHID environment, follow these steps:
 
-- Download the file yml file (e.g., MOHID_Preprocessing_environment.yml) that contains the specific packages that will be included in the environment you are going to create.
-- Create a new environment named e.g., MOHID_Preprocessing_environment:
+- Download the YAML file:
+  
+  Obtain the .yaml (or .yml) file that lists all required packages.
 
-      conda env create --file MOHID_Preprocessing_environment.yaml
+- Create the environment:
+  
+  Run the following command (make sure you’re in the directory where your yml file is located):
+
+
+      conda env create --file ENV_NAME
+
+  Replace ENV_NAME with the name of the environment you wish to create.
+
   
 **4. Activate the environment:**
 
-    conda activate MOHID_Preprocessing_environment
+To work within the new environment, activate it by running:
+
+    conda activate ENV_NAME
+
+Replace ENV_NAME with the name of the environment you wish to activate.
 
 **5. Launch Jupyter Notebook:**
 
-- Once the installation is complete, you can start Jupyter Notebook by running:
+Once the environment is activated and all necessary packages are installed, launch Jupyter Lab (or Notebook) by issuing:
 
-        jupyter notebook
+     jupyter lab
 
-This command will open the Jupyter Notebook interface in your default web browser.
+This command will open the Jupyter interface in your default web browser.
+Tip: If you prefer the classic Jupyter Notebook interface, use jupyter notebook instead.
 
-**6. Open MOHID_Preprocessing.ipynb**
+**6. Open the Notebook**
+
+Within the Jupyter interface:
+- Navigate to the directory where the notebook file (.ipynb) is located.
+- Click on the the notebook file (.ipynb) to open it.
+
+By following these steps, you´ll have a fully functional MOHID Jupyter Notebook environment for interactive computing. 
+
+
