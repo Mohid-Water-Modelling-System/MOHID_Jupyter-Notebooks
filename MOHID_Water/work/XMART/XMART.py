@@ -364,7 +364,9 @@ for run in range (0,runs):
         # Write the DomainConsolidation command, also enclosed in quotes.
         file.write(rf'"{DomainConsolidation}"')
 
-    os.remove("mohid.log")   
+    if os.path.isfile("mohid.log"):
+        os.remove("mohid.log")
+  
     output = subprocess.call([exe_dir+"/run.bat"])
     #output = subprocess.call([exe_dir+"/run.sh"])
     

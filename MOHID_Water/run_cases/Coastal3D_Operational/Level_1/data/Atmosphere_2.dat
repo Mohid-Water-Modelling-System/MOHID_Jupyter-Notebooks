@@ -132,16 +132,19 @@ OUTPUT_HDF                : 1
 <endproperty>
 
 <beginproperty>
-NAME                    : cloud cover
-UNITS                   : fraction
-DESCRIPTION             : cloud cover
-DEFAULTVALUE            : 0.
-REMAIN_CONSTANT         : 1
-FILE_IN_TIME            : NONE
-
-TIME_SERIE              : 0
-OUTPUT_HDF              : 0
-
+NAME                      : cloud cover
+UNITS                     : fraction
+DESCRIPTION               : cloud cover
+FILE_IN_TIME              : HDF
+FIELD4D                   : 1
+SPATIAL_INTERPOL          : 1
+EXTRAPOLATE               : 1
+FILENAME                  : ../../GeneralData/BoundaryConditions/meteo.hdf5
+DEFAULTVALUE              : 0.
+REMAIN_CONSTANT           : 0
+TIME_SERIE                : 0
+OUTPUT_HDF                : 1
 <endproperty>
+
 
 
