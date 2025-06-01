@@ -1,6 +1,0 @@
-Time Serie Results File
-NAME                    : hydro_River 1
- SERIE_INITIAL_DATA      : 2025.  1.  1.  0.  0.  0.0
-TIME_UNITS              : SECONDS
-      Seconds   YY  MM  DD  hh  mm       ss                                    water_flux                                  velocity_U                                  velocity_V                                  velocity_W
-<BeginTimeSerie>

@@ -1,10 +1,9 @@
 IGNORE_ON                : 1
-SLOW_START               : 432000
 <begindischarge>
 NAME                  : Tambre
 K_CELL                :  1
-COORD_X               : -8.874278
-COORD_Y               : 42.827144
+COORD_X               : -8.874738
+COORD_Y               : 42.827131
 VERTICAL_DISCHARGE    : 5
 DATA_BASE_FILE        : ../../GeneralData/Discharges/230182503_river_data.dat
 FLOW_COLUMN           : 2
@@ -28,8 +27,8 @@ DEFAULTVALUE          : 10
 <begindischarge>
 NAME                  : Ulla
 K_CELL                :  1
-COORD_X               : -8.724645
-COORD_Y               : 42.677409
+COORD_X               : -8.724964
+COORD_Y               : 42.67707
 VERTICAL_DISCHARGE    : 5
 DATA_BASE_FILE        : ../../GeneralData/Discharges/230161838_river_data.dat
 FLOW_COLUMN           : 2
@@ -51,10 +50,35 @@ DEFAULTVALUE          : 10
 <enddischarge>
 
 <begindischarge>
+NAME                  : Umia
+K_CELL                :  1
+COORD_X               : -8.80892
+COORD_Y               : 42.500172
+VERTICAL_DISCHARGE    : 5
+DATA_BASE_FILE        : ../../GeneralData/Discharges/230109620_river_data.dat
+FLOW_COLUMN           : 2
+
+<<beginproperty>>
+NAME                  : salinity
+UNITS                 : psu
+DEFAULTVALUE          : 0.01
+<<endproperty>>
+
+<<beginproperty>>
+NAME                  : temperature
+UNITS                 : ºC
+DEFAULTVALUE          : 10
+!TIME_SERIE_COLUMN     : 2
+!FILENAME              : ../../GeneralData/Discharges/River1Temp.dat
+<<endproperty>>
+
+<enddischarge>
+
+<begindischarge>
 NAME                  : Lerez
 K_CELL                :  1
-COORD_X               : -8.613761
-COORD_Y               : 42.440112
+COORD_X               : -8.614011
+COORD_Y               : 42.43999
 VERTICAL_DISCHARGE    : 5
 DATA_BASE_FILE        : ../../GeneralData/Discharges/230107447_river_data.dat
 FLOW_COLUMN           : 2
@@ -78,10 +102,10 @@ DEFAULTVALUE          : 10
 <begindischarge>
 NAME                  : Verdugo
 K_CELL                :  1
-COORD_X               : -8.610299
-COORD_Y               : 42.308025
+COORD_X               : -8.610746
+COORD_Y               : 42.307586
 VERTICAL_DISCHARGE    : 5
-DATA_BASE_FILE        : ../../GeneralData/Discharges/230109627_river_data.dat
+DATA_BASE_FILE        : ../../GeneralData/Discharges/230112893_river_data.dat
 FLOW_COLUMN           : 2
 
 <<beginproperty>>
