@@ -1,4 +1,4 @@
-name: MOHID_Lagrangian_environment_clean
+name: MOHID_Lagrangian_environment
 channels:
   - conda-forge
   - defaults
