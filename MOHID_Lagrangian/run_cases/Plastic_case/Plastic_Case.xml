@@ -55,7 +55,7 @@
 		<constants>
 			<BeachingLevel value="-0.1" comment="Level above which beaching can occur. Default = -3.0" units_comment="m" />
 			<BeachingStopProb value="0.0" comment="probability of beaching. Default = 0.5" units_comment="m" />
-            <DiffusionCoeff value="1" comment="Horizontal diffusion coefficient. Default = 1.0" units_comment="m2/s" />	
+            <DiffusionCoeff value="800" comment="Horizontal diffusion coefficient. Default = 1.0" units_comment="m2/s" />	
             <!-- <ResuspensionCoeff value="0.1" comment="Resuspension amplitude velocity factor. Default = 0.0" units_comment="n.u" /> -->
             <!-- <CriticalShearErosion value="0.4" comment="CriticalShearErosion value. Default = 0.4" units_comment="N/m2" /> -->
             <!-- <Rugosity value="0.0025" comment="Rugosity value. Default = 0.0025" units_comment="m2/s" /> -->

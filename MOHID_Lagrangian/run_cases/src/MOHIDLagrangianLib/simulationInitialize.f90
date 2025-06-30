@@ -26,6 +26,7 @@
     use xmlParser_mod
     use sources_mod
     use ModuleWaterQuality
+    use geometry_mod
 
     use FoX_dom
 
@@ -381,7 +382,7 @@
     integer :: i, j, k
     logical :: readflag
     integer :: id
-    type(string) :: name, source_geometry, tag, att_name, att_val, att_val2, att_val3, rate_file, posi_file
+    type(string) :: name, source_geometry, tag, att_name, att_val, att_val2, rate_file, posi_file
     real(prec) :: emitting_rate, rateScale, start, finish, temp, bottom_emission_depth, biofouling_rate, biofouling_start_after
     real(prec) :: tracer_volume
     logical :: emitting_fixed, posi_fixed, rateRead
@@ -434,27 +435,21 @@
         att_name="value"
         call XMLReader%getNodeAttribute(source_node, tag, att_name, att_val, readflag, .false.)
         if (readflag) then
-            tag="rate_seconds"
+            tag="rate_trcPerEmission"
             att_name="value"
             readflag = .false.
             call XMLReader%getNodeAttribute(source_node, tag, att_name, att_val2, readflag, .false.)
-            if (readflag) then !Recieved rate in seconds
-                tag="rate_trcPerEmission"
-                att_name="value"
-                readflag = .false.
-                call XMLReader%getNodeAttribute(source_node, tag, att_name, att_val3, readflag, .false.)
-                if (readflag) then !Recieved number of tracers per rate_seconds
-                    rateRead = .true.
-                    emitting_rate = 1/att_val2%to_number(kind=1._R8P) * att_val3%to_number(kind=1._R8P) !if 3600s, 5tracers and dt = 60 => 0.08 tracers per DT
-                    emitting_fixed = .true.
-                else !if rate_seconds is used, then rate_trcPerEmission is needed
-                    rateRead = .false.
-                endif
-            else ! recieved rate in dt steps
+            if (readflag) then !Recieved number of tracers per rate_seconds
                 rateRead = .true.
-                emitting_rate = 1.0/(att_val%to_number(kind=1._R8P)*Globals%SimDefs%dt)
+                emitting_rate = 1.0/att_val%to_number(kind=1._R8P) * att_val2%to_number(kind=1._R8P) !if 3600s, 5tracers and dt = 60 => 0.08 tracers per DT
                 emitting_fixed = .true.
+            else !if rate_seconds is used, then rate_trcPerEmission is needed
+                rateRead = .false.
             endif
+        else ! recieved rate in dt steps
+            rateRead = .true.
+            emitting_rate = 1.0/(att_val%to_number(kind=1._R8P)*Globals%SimDefs%dt)
+            emitting_fixed = .true.
         end if
         tag="rate"
         att_name="value"
@@ -592,10 +587,17 @@
     subroutine init_simdefs(case_node)
     type(Node), intent(in), pointer :: case_node
     type(NodeList), pointer :: defsList       !< Node list for simdefs
+    type(NodeList), pointer :: beachingChildren       !< Node list for source node children nodes
+    type(NodeList), pointer :: beachingAreasList       !< Node list for source node children nodes
     type(Node), pointer :: simdefs_node       !< Single simdefs block to process
+    type(Node), pointer :: beaching_node       !< Single beaching block to process
+    type(Node), pointer :: beachingArea_node   !< Single beaching block to process
+    type(Node), pointer :: beaching_detail
     type(string) :: outext
-    integer :: i
-    type(string) :: pts(2), tag, att_name, att_val
+    integer :: i, id, j, coastType, unbeach, runUpEffect, runUpEffectUnbeach
+    type(string) :: pts(2), tag, att_name, att_val, beaching_geometry
+    real(prec) :: probability, waterColumnThreshold, beachTimeScale, unbeachTimeScale, beachSlope
+    class(shape), allocatable :: beaching_shape
     type(vector) :: coords
     logical :: read_flag
     read_flag = .false.
@@ -656,6 +658,132 @@
     call XMLReader%getNodeAttribute(simdefs_node, tag, att_name, att_val, read_flag, .false.)
     if (read_flag) then
         call Globals%SimDefs%setTemperature_add_offset(att_val)
+    endif
+    
+    tag="Beaching"
+    call XMLReader%gotoNode(simdefs_node,beaching_node,tag,read_flag, .false.)
+    
+    if (read_flag) then
+        tag="BeachingEnabled"
+        att_name="value"
+        call XMLReader%getNodeAttribute(beaching_node, tag, att_name, att_val, read_flag, .true.)
+        if (read_flag) then
+            call Globals%SimDefs%setFreeLitterAtBeaching(att_val)
+        endif
+        
+        !Now get all the beaching areas
+        beachingAreasList => getElementsByTagname(beaching_node, "BeachingArea")
+        !allocating the temporary BeachingAreas objects
+        call Globals%BeachingAreas%initialize(getLength(beachingAreasList))
+        
+        do j = 0, getLength(beachingAreasList) - 1
+            beachingArea_node => item(beachingAreasList,j)
+            tag="BeachAreaID"
+            att_name="id"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val)
+            id=att_val%to_number(kind=1_I1P)
+            
+            !reading possible custom resolution
+            tag="CoastType"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            if (read_flag) then
+                coastType = att_val%to_number(kind=1_I1P)
+            else
+                coastType = 1
+            end if
+            !reading emission rate, need to check for options
+            
+            tag="Probability"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            if (read_flag) then
+                probability = att_val%to_number(kind=1._R8P)
+            else
+                probability = 0.0
+            end if
+            if (probability < 0.0 .or. probability > 1.0) then
+                outext='-->Beaching Area id = '//id// ' has probability < 0 or > 1. Should be between 0 and 1. Stoping'
+                call Log%put(outext)
+                stop
+            end if
+            
+            tag="WaterColumnThreshold"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            waterColumnThreshold = 0.1
+            if (read_flag) then
+                waterColumnThreshold = att_val%to_number(kind=1._R8P)
+            end if
+            
+            
+            tag="BeachTimeScale"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            beachTimeScale = 3600.0
+            if (read_flag) then
+                beachTimeScale = att_val%to_number(kind=1._R8P)
+            end if
+        
+            tag="Unbeach"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            unbeach = 1
+            if (read_flag) then
+                unbeach = att_val%to_number(kind=1_I1P)
+            end if
+            
+            tag="UnbeachTimeScale"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            unbeachTimeScale = 3600.0
+            if (read_flag) then
+                unbeachTimeScale = att_val%to_number(kind=1._R8P)
+            end if
+            
+            tag="RunUpEffect"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            runUpEffect = 0
+            if (read_flag) then
+                runUpEffect = att_val%to_number(kind=1_I1P)
+            end if
+            
+            tag="BeachSlope"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            beachSlope = 0.01
+            if (read_flag) then
+                beachSlope = att_val%to_number(kind=1._R8P)
+            end if
+        
+            tag="RunUpEffectUnbeach"
+            att_name="value"
+            call XMLReader%getNodeAttribute(beachingArea_node, tag, att_name, att_val, read_flag, .false.)
+            runUpEffectUnbeach = 0
+            if (read_flag) then
+                runUpEffectUnbeach = att_val%to_number(kind=1_I1P)
+            end if
+        
+            beachingChildren => getChildNodes(beachingArea_node) !getting all of the nodes bellow the main source node (all of it's private info)
+            do i=0, getLength(beachingChildren)-1
+                beaching_detail => item(beachingChildren,i) !grabing a node
+                beaching_geometry = getLocalName(beaching_detail)  !finding its name
+                if (Geometry%isPolygon(beaching_geometry)) then  !if the node is a polygon
+                    call Geometry%allocateShape(beaching_geometry,beaching_shape)                
+                    call read_xml_geometry(beachingArea_node,beaching_detail,beaching_shape)
+                    exit
+                end if
+            end do
+            
+            !initializing Beach area
+            call Globals%BeachingAreas%beachArea(j+1)%initialize(id, coastType, probability, waterColumnThreshold, &
+                                                 beachTimeScale, unbeach, unbeachTimeScale, runUpEffect, &
+                                                 beachSlope, runUpEffectUnbeach, beaching_geometry, beaching_shape)
+       
+            deallocate(beaching_shape)
+        enddo
+        
     endif
     
     call Globals%SimDefs%print()
