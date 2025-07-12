@@ -229,7 +229,7 @@ def update_simulation_definitions(xml_file_path,resolution,timestep,BoundingBoxM
 
     print(f"Updated <simulation> block in '{xml_file_path}' successfully.")
 
-def update_source_definitions(xml_file_path, markers_dict,rate_seconds,rate_trcPerEmission):
+def update_source_definitions(xml_file_path, markers_dict,rate_seconds,rate_trcPerEmission,start_emission,end_emission):
     """
     Updates only the content of the <sourceDefinitions> block in the XML file with marker information,
     preserving any text outside this block unchanged.
@@ -290,6 +290,12 @@ def update_source_definitions(xml_file_path, markers_dict,rate_seconds,rate_trcP
         point_elem.set("y", f"{location[0]:.5f}")
         point_elem.set("z", "0")
         point_elem.set("units_comment", "(deg,deg,m)")
+        
+        # <active> element with time information.
+        active_elem = ET.SubElement(source_elem, "active")
+        active_elem.set("start", str(start_emission))
+        active_elem.set("end", str(end_emission))
+        active_elem.set("units_comment", "seconds (s)")
         
         # Append the marker element.
         source_defs.append(source_elem)
