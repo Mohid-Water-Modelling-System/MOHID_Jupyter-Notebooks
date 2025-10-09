@@ -1,0 +1,21 @@
+name: MOHID_Postprocessing_environment
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - folium
+  - h5py
+  - ipyleaflet
+  - ipywidgets
+  - matplotlib
+  - netcdf4
+  - notebook
+  - numpy
+  - pandas
+  - requests
+  - tqdm
+  - xarray
+  - cartopy
+  - scipy
+  - imageio-ffmpeg
+  - dash

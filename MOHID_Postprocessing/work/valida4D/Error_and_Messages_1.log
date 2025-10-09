@@ -1,0 +1,31 @@
+ Registered Module  : EnterData
+ Registered Instance: EnterData
+ Instance ID        :  1
+ Registered Instance: EnterData
+ Instance ID        :  2
+ Registered Module  : Time
+ Registered Instance: Time
+ Instance ID        :  1
+ Registered Module  : Field4D
+ Registered Instance: Field4D
+ Instance ID        :  1
+ Registered Instance: HDF5
+ Instance ID        :  1
+ Registered Instance: HDF5
+ Instance ID        :  2
+ Registered Module  : HorizontalGrid
+ Registered Instance: HorizontalGrid
+ Instance ID        :  1
+ Registered Module  : GridData
+ Registered Instance: GridData
+ Instance ID        :  1
+ Registered Module  : HorizontalMap
+ Registered Instance: HorizontalMap
+ Instance ID        :  1
+ Registered Module  : Geometry
+ Registered Instance: Geometry
+ Instance ID        :  1
+ Registered Module  : Map
+ Registered Instance: Map
+ Instance ID        :  1
+ SUCCESSFUL  : 1

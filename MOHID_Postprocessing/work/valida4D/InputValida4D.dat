@@ -1,0 +1,21 @@
+FIELD4D         : 1
+EXTRAPOLATE     : 0
+INPUT_TABLE     : C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Postprocessing\work\valida4D\Input_table.dat
+Z_DEPTHS        : 0.0
+X_COLUMN        : 1
+Y_COLUMN        : 2
+Z_COLUMN        : 3
+OUTPUT_TABLE    : C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Postprocessing\out\OutTable.dat
+START           :2025 09 25 00 00 00
+END             :2025 09 27 00 00 00
+DT              : 3600
+<BeginHDF5>
+C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Postprocessing\res\20250925_20250926\Hydrodynamic_2_Surface.hdf5
+C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter Notebooks\MOHID_Postprocessing\res\20250926_20250927\Hydrodynamic_2_Surface.hdf5
+<EndHDF5>
+<beginproperty>
+NAME        :  water level
+UNITS       : m
+DESCRIPTION : water level
+COLUMN      : 5
+<endproperty>

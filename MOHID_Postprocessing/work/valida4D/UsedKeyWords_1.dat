@@ -1,0 +1,60 @@
+ OUTWATCH                  Valida4D                  Do not have               From File                 ************                                                 YES
+ INPUT_TABLE               ModuleValida4D            Do not have               From File                 C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter No YES
+ T_COLUMN                  ModuleValida4D            -9999999                  From File                 -9999999                                                     YES
+ TS_OUTPUT                 ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ X_COLUMN                  ModuleValida4D            Do not have               From File                 1                                                            YES
+ Y_COLUMN                  ModuleValida4D            Do not have               From File                 2                                                            YES
+ Z_COLUMN                  ModuleValida4D            -9999999                  From File                 3                                                            YES
+ COMPUTE_D                 ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ D_COLUMN                  ModuleValida4D            -9999999                  From File                 -9999999                                                     YES
+ OUTPUT_TABLE              ModuleValida4D            Do not have               From File                 C:\Users\aquaf\OneDrive\Projetos\Aquaflow\Maretec\Jupyter No YES
+ FIELD4D                   ModuleValida4D            TRUE                      From File                 TRUE                                                         YES
+ FILE_LIST_MODE            ModuleValida4D            TRUE                      From File                 TRUE                                                         YES
+ EXTRAPOLATE               ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ ONLY_FIRST_INSTANT        ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ TIME_VIA_HDF5             ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ START                     ModuleValida4D            Do not have               From File                 2025.00000000000 9.00000000000000 25.0000000000000 0.0000000 YES
+ END                       ModuleValida4D            Do not have               From File                 2025.00000000000 9.00000000000000 27.0000000000000 0.0000000 YES
+ DT                        ModuleValida4D            Do not have               From File                 3600.00000000000                                             YES
+ VARIABLEDT                ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ TIME_STATISTICS           ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ FILTER_TRAJECTORY         ModuleValida4D            FALSE                     From File                 FALSE                                                        YES
+ NAME                      Unknown Client            Do not have               From Block                water level                                                  YES
+ DYNAMIC                   Unknown Client            FALSE                     From Block                FALSE                                                        YES
+ UNITS                     Unknown Client            Do not have               From Block                m                                                            YES
+ DESCRIPTION               Unknown Client            Do not have               From Block                water level                                                  YES
+ COLUMN                    ModuleValida4D            Do not have               From Block                5                                                            YES
+ 3D                        ModuleValida4D            TRUE                      From Block                TRUE                                                         YES
+ SERIE_INITIAL_DATA        ModuleTimeSerie           Do not have               From File                 2025.00000000000 9.00000000000000 25.0000000000000 0.0000000 YES
+ LONG_GRID                 ModuleField4D             Longitude                 From File                 Longitude                                                    YES
+ LAT_GRID                  ModuleField4D             Latitude                  From File                 Latitude                                                     YES
+ DEPTH_GRID                ModuleField4D             VerticalZ                 From File                 VerticalZ                                                    YES
+ BATHYM_GRID               ModuleField4D             Bathymetry                From File                 Bathymetry                                                   YES
+ MASK_GRID                 ModuleField4D             WaterPoints3D             From File                 WaterPoints3D                                                YES
+ DEFAULTVALUE              ModuleField4D             0.00000000000000          From File                 0.00000000000000                                             YES
+ VALUES_TYPE               ModuleField4D             1                         From File                 1                                                            YES
+ MIN_FOR_DT_DECREASE       ModuleField4D             1.000000000000000E-015    From File                 1.000000000000000E-015                                       YES
+ 4D                        ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ VGROUP_PATH               ModuleField4D             /Results                  From File                 /Results                                                     YES
+ MULTIPLYING_FACTOR        ModuleField4D             1.00000000000000          From File                 1.00000000000000                                             YES
+ ADDING_FACTOR             ModuleField4D             0.00000000000000          From File                 0.00000000000000                                             YES
+ FIELD_NAME                ModuleField4D             water level               From File                 water level                                                  YES
+ HDF_FIELD_NAME            ModuleField4D             water level               From File                 water level                                                  YES
+ HDF_FIELD_NAME_2          ModuleField4D             water level               From File                 water level                                                  YES
+ LAST_GROUP_EQUAL_FIELD    ModuleField4D             TRUE                      From File                 TRUE                                                         YES
+ FROM_2D_TO_3D             ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ FROM_3D_TO_2D             ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ OUTPUT_TIME               Unknown Client            Do not have               From File                                                                              YES
+ HARMONICS                 ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ SPACE_DIM                 ModuleField4D             3                         From File                 3                                                            YES
+ CHANGE_IN_TIME            ModuleField4D             TRUE                      From File                 TRUE                                                         YES
+ MIN_VALUE                 ModuleField4D             -9.900000000000000E+015   From File                 -9.900000000000000E+015                                      YES
+ MAX_VALUE                 ModuleField4D             9.900000000000000E+015    From File                 9.900000000000000E+015                                       YES
+ EXTRAPOLATE               ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ EXTRAPOLATE_METHOD        ModuleField4D             1                         From File                 1                                                            YES
+ INTERPOLATE_METHOD        ModuleField4D             1                         From File                 1                                                            YES
+ EXTRAPOLATE_POINT         ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ Z_DEPTHS                  ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ DISCARD_FILLVALUES        ModuleField4D             TRUE                      From File                 TRUE                                                         YES
+ DYNAMIC_MAPPING           ModuleField4D             FALSE                     From File                 FALSE                                                        YES
+ REGULAR_GRID              ModuleField4D             FALSE                     From File                 FALSE                                                        YES
