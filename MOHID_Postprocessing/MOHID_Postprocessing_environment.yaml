@@ -3,8 +3,12 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - cartopy
+  - dash
   - folium
+  - geoglows
   - h5py
+  - imageio-ffmpeg
   - ipyleaflet
   - ipywidgets
   - matplotlib
@@ -13,9 +17,7 @@ dependencies:
   - numpy
   - pandas
   - requests
+  - scipy
   - tqdm
   - xarray
-  - cartopy
-  - scipy
-  - imageio-ffmpeg
-  - dash
+  - utide
