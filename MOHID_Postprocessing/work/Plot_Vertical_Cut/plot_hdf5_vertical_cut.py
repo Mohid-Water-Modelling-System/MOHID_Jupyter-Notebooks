@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Generate a true vertical cut (depth vs distance) animation along a path
-defined by CSV waypoints. Every grid cell intersected between waypoints
-is included via Bresenham’s algorithm—no fixed interpolation needed.
+defined by CSV waypoints. Optionally plot velocity vectors projected
+onto the cut plane using velocity components U, V, W.
 """
 
 import importlib
@@ -15,12 +15,12 @@ import glob
 import datetime
 import numpy as np
 import h5py
-import csv
 import geopy.distance
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from scipy.ndimage import gaussian_filter1d
 import pandas as pd
+
 
 # -----------------------------
 # HELPER FUNCTIONS
@@ -44,7 +44,7 @@ def collect_hdf5_paths(root, h5file, sd, ed):
 
 def index_by_time(hdf5_paths):
     """
-    Build dict mapping each datetime → list of (file_path, time_key).
+    Build dict mapping each datetime -> list of (file_path, time_key).
     """
     idx = {}
     for path in hdf5_paths:
@@ -59,31 +59,16 @@ def index_by_time(hdf5_paths):
 def mask_invalid(data3d, open3d, sentinel=None):
     """
     Mask out invalid points in a 3D array.
-
-    Parameters
-    ----------
-    data3d : np.ndarray
-        The 3D data to mask (shape nz×ny×nx).
-    open3d : np.ndarray
-        Numeric mask (same shape) where 0 means dry/invalid.
-    sentinel : float or None
-        Optional fill‐value to treat as NaN.
-
-    Returns
-    -------
-    np.ndarray
-        Copy of data3d with dry cells and sentinel values set to np.nan.
     """
     masked = np.where(open3d == 0, np.nan, data3d)
     if sentinel is not None:
-        # use isclose to avoid floating equality issues
         masked = np.where(np.isclose(masked, sentinel), np.nan, masked)
     return masked
 
 
 def bresenham(i0, j0, i1, j1):
     """
-    Bresenham’s line algorithm between two grid indices.
+    Bresenham's line algorithm between two grid indices.
     Returns list of (i,j) inclusive of endpoints.
     """
     dx, dy = abs(i1 - i0), abs(j1 - j0)
@@ -108,7 +93,7 @@ def bresenham(i0, j0, i1, j1):
 def grid_location(lon, lat, lonc, latc):
     """
     Find nearest grid cell to (lon,lat).
-    Brute‐force search; for large grids, consider KDTree.
+    Brute-force search; for large grids consider KDTree replacement.
     """
     dist = np.hypot(lonc - lon, latc - lat)
     j, i = np.unravel_index(np.argmin(dist), dist.shape)
@@ -119,16 +104,9 @@ def get_path_indices(csv_file, lonc, latc):
     """
     Read lon/lat vertices from CSV, map to grid cells, and
     trace all cells along the path via Bresenham.
-    Returns arrays: distance[m], grid_i, grid_j.
+    Returns arrays: distance[km], grid_i, grid_j.
     """
-    df = pd.read_csv(
-        csv_file,
-        sep=',',
-        header=None,
-        names=['lon', 'lat'],
-        engine='python'
-    )
-
+    df = pd.read_csv(csv_file, sep=',', header=None, names=['lon', 'lat'], engine='python')
     lons = df["lon"].tolist()
     lats = df["lat"].tolist()
 
@@ -140,6 +118,9 @@ def get_path_indices(csv_file, lonc, latc):
         if k > 0:
             seg = seg[1:]
         cells.extend(seg)
+
+    if len(cells) == 0:
+        return np.array([]), np.array([], dtype=int), np.array([], dtype=int)
 
     grid_i = np.array([i for i, _ in cells], int)
     grid_j = np.array([j for _, j in cells], int)
@@ -182,7 +163,7 @@ def centers_to_bounds(centers):
 # -----------------------------
 if __name__ == "__main__":
 
-    # parse dates
+    # parse dates (expected in Input_Plot_HDF5_Cut)
     sd = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
     ed = datetime.datetime.strptime(end_date_str,   "%Y-%m-%d").date()
 
@@ -190,10 +171,17 @@ if __name__ == "__main__":
     scalar_files = collect_hdf5_paths(backup_root, hdf5_file, sd, ed)
     if not scalar_files:
         raise RuntimeError("No HDF5 files in date range.")
+        
+    vector_files = collect_hdf5_paths(backup_root, hdf5_file_vectors, sd, ed)
+    if not vector_files:
+        raise RuntimeError("No HDF5 files for vectors in date range.")
 
     # index times
     scalar_index = index_by_time(scalar_files)
     all_times     = sorted(scalar_index.keys())
+    
+    vector_index = index_by_time(vector_files)
+    vector_all_times     = sorted(vector_index.keys())
 
     # read lon/lat grid
     with h5py.File(scalar_files[0], "r") as hf0:
@@ -214,6 +202,7 @@ if __name__ == "__main__":
     distances_per_timestep = []  # store distance arrays matching each filtered slice
     x_bounds_list = []
     y_bounds_list = []
+    quiver_grids = []         # list of (Xq, Yq, Uq, Wq) per timestep
     SENTINEL_Z = -9.9e15
 
     for dt in all_times:
@@ -229,6 +218,21 @@ if __name__ == "__main__":
             # treat every point as 'open' by passing ones_like()
             z3d     = mask_invalid(raw_z3d, np.ones_like(raw_z3d), sentinel=SENTINEL_Z)
 
+        # --- READ VELOCITIES IF REQUESTED (names may vary) ---
+        if show_vectors:
+            vfile, vtkey = vector_index[dt][0]
+            with h5py.File(vfile, "r") as sh:
+
+                rawU = sh["Results"]["velocity U"][f"velocity U_{vtkey.split('_')[1]}"][:]
+                rawV = sh["Results"]["velocity V"][f"velocity V_{vtkey.split('_')[1]}"][:]
+                rawW = sh["Results"]["velocity W"][f"velocity W_{vtkey.split('_')[1]}"][:]
+
+                U3d = mask_invalid(rawU, op3d, sentinel=SENTINEL_Z)
+                V3d = mask_invalid(rawV, op3d, sentinel=SENTINEL_Z)
+                W3d = mask_invalid(rawW, op3d, sentinel=SENTINEL_Z)
+        else:
+            U3d = V3d = W3d = None
+
         # extract vertical slice along the (immutable) grid_i/grid_j path
         if grid_i.size == 0:
             continue
@@ -243,7 +247,7 @@ if __name__ == "__main__":
             axis=1
         )  # shape (nz, ncols_original)
 
-        # find columns that *aren’t* all NaN (vertical grid not present or fully masked)
+        # find columns that *aren't* all NaN (vertical grid not present or fully masked)
         valid_cols = ~np.isnan(z2d).all(axis=0)
         if not np.any(valid_cols):
             # nothing valid for this timestep; skip
@@ -267,7 +271,6 @@ if __name__ == "__main__":
 
         # compute per-timestep centers and bounds and store them
         nz_data_t = slice2d.shape[0]
-        # representative z centers for this timestep (mean across columns)
         z_centers_t = np.nanmean(z2d[:nz_data_t, :], axis=1)
         x_centers_t = distance_t
 
@@ -281,11 +284,64 @@ if __name__ == "__main__":
         y_bounds_list.append(y_bounds_t)
         time_titles.append(dt.strftime("%d/%m/%Y %H:%M UTC"))
 
+        # --- VELOCITY: extract slices and compute along-path projection and downsample ---
+        if show_vectors:
+            Uslice = np.stack([U3d[:, j, i] for i, j in zip(grid_i, grid_j)], axis=1)[:, valid_cols]
+            Vslice = np.stack([V3d[:, j, i] for i, j in zip(grid_i, grid_j)], axis=1)[:, valid_cols]
+            Wslice = np.stack([W3d[:, j, i] for i, j in zip(grid_i, grid_j)], axis=1)[:, valid_cols]
+
+            # get column lon/lat centers for this filtered path
+            lon_cols = np.array([lonc[grid_j_t[n], grid_i_t[n]] for n in range(grid_i_t.size)])
+            lat_cols = np.array([latc[grid_j_t[n], grid_i_t[n]] for n in range(grid_i_t.size)])
+
+            # approximate meters per degree at mean latitude
+            mean_lat = np.nanmean(lat_cols)
+            m_per_deg_lat = geopy.distance.distance((mean_lat - 1.0, lon_cols.mean()), (mean_lat, lon_cols.mean())).m
+            m_per_deg_lon = geopy.distance.distance((mean_lat, lon_cols.mean() - 1.0), (mean_lat, lon_cols.mean())).m
+
+            Xm = (lon_cols - lon_cols.mean()) * m_per_deg_lon
+            Ym = (lat_cols - lat_cols.mean()) * m_per_deg_lat
+
+            dXm = np.gradient(Xm)
+            dYm = np.gradient(Ym)
+            norms = np.hypot(dXm, dYm)
+            norms[norms == 0] = 1.0
+            tx = dXm / norms
+            ty = dYm / norms
+
+            # project horizontal velocities onto path tangent
+            u_along = Uslice * tx[np.newaxis, :] + Vslice * ty[np.newaxis, :]
+
+            # downsample indices to avoid clutter
+            ncols_ds = max(1, int(np.ceil(u_along.shape[1] / max_arrows_across)))
+            nz_ds = max(1, int(np.ceil(u_along.shape[0] / max_arrows_vertical)))
+            cols_ds = np.arange(0, u_along.shape[1], ncols_ds, dtype=int)
+            zs_ds = np.arange(0, u_along.shape[0], nz_ds, dtype=int)
+
+            # x (distance) and z (depth) centers for arrows
+            x_centers_ds = distance_t[cols_ds]
+            z_centers_levels = np.nanmean(z2d[:nz_data_t, :], axis=1)
+            y_centers_ds = z_centers_levels[zs_ds]
+
+            Xq, Yq = np.meshgrid(x_centers_ds, y_centers_ds)
+            Uq = u_along[zs_ds[:, None], cols_ds[None, :]]
+            Wq = Wslice[zs_ds[:, None], cols_ds[None, :]]
+
+            # mask tiny vectors
+            mag = np.hypot(Uq, Wq)
+            Uq = np.where(mag < min_vector_mag, np.nan, Uq)
+            Wq = np.where(mag < min_vector_mag, np.nan, Wq)
+
+            # push to list (note: use -Wq if you want positive downward when depth axis increases downward)
+            quiver_grids.append((Xq, Yq, Uq, -Wq))
+        else:
+            quiver_grids.append((None, None, None, None))
+
     # check we have something to plot
     if len(vertical_slices) == 0:
         raise RuntimeError("No valid vertical slices found for any timestep.")
 
-    # determine global color limits
+    # determine global color limits if not set
     if vmin is None:
         vmin = np.nanmin([np.nanmin(s) for s in vertical_slices])
     if vmax is None:
@@ -298,19 +354,16 @@ if __name__ == "__main__":
 
     nz_data, ncols = data2d.shape
 
-    # sanity checks for bounds arrays
     if y_bounds_list[first_idx].size != nz_data + 1:
         raise RuntimeError(f"After alignment y_bounds length {y_bounds_list[first_idx].size} != nz+1 ({nz_data+1}).")
     if x_bounds_list[first_idx].size != ncols + 1:
         raise RuntimeError(f"x_bounds length {x_bounds_list[first_idx].size} != ncols+1 ({ncols+1}).")
 
-    # --- helper to create mesh ---
     def make_mesh(ax, x_bounds, y_bounds, data2d, **pcm_kwargs):
         """
         Create a pcolormesh on ax using bounds arrays and 2D data.
         x_bounds: (ncols+1,), y_bounds: (nz+1,), data2d: (nz, ncols)
         """
-        # pcolormesh expects X and Y either 1D bounds or 2D; 1D is fine here
         pcm = ax.pcolormesh(x_bounds, y_bounds, data2d, **pcm_kwargs)
         return pcm
 
@@ -328,34 +381,28 @@ if __name__ == "__main__":
         vmax=vmax
     )
 
-    # initial contour levels (global)
-    #n_contours = 8
-    #contour_levels = np.linspace(vmin, vmax, n_contours + 1)
-
-    # build centers from bounds for contour grid (frame 0)
+    # draw initial contours
     Xb0 = x_bounds_list[0]
     Yb0 = y_bounds_list[0]
     x_centers0 = 0.5 * (Xb0[:-1] + Xb0[1:])
     y_centers0 = 0.5 * (Yb0[:-1] + Yb0[1:])
     Xg0, Yg0 = np.meshgrid(x_centers0, y_centers0)
 
-    # draw initial contours
     contour_set = ax.contour(
         Xg0, Yg0, vertical_slices[0],
-        levels=countour_levels,
+        levels=contour_levels,
         colors='w',
         linewidths=0.6,
         linestyles="solid"
     )
-    # optional initial labels
+
+    # label only initial contours to avoid clutter during animation
     ax.clabel(contour_set, inline=True, fmt="%.2f", fontsize=8)
 
     Yb = y_bounds_list[:]
-    # choose numeric min/max (bounds are length nz+1)
     y_min, y_max = float(np.min(Yb)), float(np.max(Yb))
 
     ax.set_ylim(y_max, y_min)
-
     ax.invert_xaxis()
     ax.set_xlabel("Distance along path (km)")
     ax.set_ylabel("Depth (m)")
@@ -364,13 +411,21 @@ if __name__ == "__main__":
     cbar = fig.colorbar(pcm, ax=ax)
     cbar.set_label(f"{label}")
 
+    # initial quiver (if enabled)
+    quiv = None
+    if show_vectors:
+        Xq0, Yq0, Uq0, Wq0 = quiver_grids[0]
+        if Xq0 is not None:
+            quiv = ax.quiver(Xq0, Yq0, Uq0, Wq0, angles='xy', scale_units='xy',
+                             scale=scale_quiver, color=quiver_color, width=quiver_width)
+
     plt.tight_layout()
 
-    # --- ANIMATION: recreate mesh and contour each frame ---
+    # --- ANIMATION: recreate mesh/contour/quiver each frame (blit=False for robustness) ---
     def update(idx):
-        global pcm, contour_set, cbar
+        global pcm, contour_set, cbar, quiv
 
-       # remove previous QuadMesh (pcm) safely
+        # remove previous pcm safely
         try:
             if pcm is not None:
                 pcm.remove()
@@ -382,7 +437,13 @@ if __name__ == "__main__":
                 coll.remove()
             except Exception:
                 pass
-      
+
+        # remove previous quiver
+        try:
+            if quiv is not None:
+                quiv.remove()
+        except Exception:
+            pass
 
         # create new mesh for this frame
         x_b = x_bounds_list[idx]
@@ -400,33 +461,39 @@ if __name__ == "__main__":
             vmax=vmax
         )
 
-        # create new contour grid from bounds -> centers
+        # contours
         x_centers = 0.5 * (x_b[:-1] + x_b[1:])
         y_centers = 0.5 * (y_b[:-1] + y_b[1:])
-        # handle degenerate empty centers (shouldn't happen because we filtered earlier)
         if x_centers.size == 0 or y_centers.size == 0:
             contour_set = None
         else:
             Xg, Yg = np.meshgrid(x_centers, y_centers)
             contour_set = ax.contour(
                 Xg, Yg, data2d,
-                levels=countour_levels,
+                levels=contour_levels,
                 colors='w',
                 linewidths=0.6,
                 linestyles="solid"
             )
-            # optional: omit repeated labels each update to avoid overlap; label only first and last frames if needed
-            ax.clabel(contour_set, inline=True, fmt="%.2f", fontsize=8)
+            
+        ax.clabel(contour_set, inline=True, fmt="%.2f", fontsize=8)
+
+        # quiver for this frame
+        if show_vectors:
+            Xq, Yq, Uq, Wq = quiver_grids[idx]
+            if Xq is not None:
+                quiv = ax.quiver(Xq, Yq, Uq, Wq, angles='xy', scale_units='xy',
+                                 scale=scale_quiver, color=quiver_color, width=quiver_width)
+            else:
+                quiv = None
 
         ax.set_ylim(y_max, y_min)
-
         ax.set_title(time_titles[idx])
 
-        # update colorbar mapping to new pcm
+        # keep colorbar stable; update mappable
         try:
             cbar.update_normal(pcm)
         except Exception:
-            # fallback: remove and recreate colorbar (rare)
             try:
                 cbar.remove()
             except Exception:
@@ -442,7 +509,7 @@ if __name__ == "__main__":
         update,
         frames=len(vertical_slices),
         interval=500,
-        blit=True
+        blit=False
     )
 
     date_span = f"{sd.strftime('%Y%m%d')}_{ed.strftime('%Y%m%d')}"
@@ -452,7 +519,6 @@ if __name__ == "__main__":
 
     # save with ffmpeg if available; handle errors gracefully
     try:
-        # draw once to finalize mesh geometry
         fig.canvas.draw()
         ani.save(output_mp4, writer="ffmpeg", dpi=dpi)
         print(f"Animation saved to {output_mp4}")
