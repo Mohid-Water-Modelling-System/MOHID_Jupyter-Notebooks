@@ -6,7 +6,6 @@ dependencies:
   - cartopy
   - dash
   - folium
-  - geoglows
   - h5py
   - imageio-ffmpeg
   - ipyleaflet
@@ -23,3 +22,4 @@ dependencies:
   - utide
   - rasterio
   - geopy
+  - jupyterlab
