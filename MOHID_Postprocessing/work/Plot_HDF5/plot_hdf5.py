@@ -27,7 +27,11 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Point Matplotlib to the ffmpeg executable provided by imageio_ffmpeg
 mpl.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
-          
+         
+import geopandas as gpd
+from cartopy.feature import ShapelyFeature
+from pathlib import Path
+         
 
 # ----------------------------------------
 # UTILITY FUNCTIONS
@@ -76,7 +80,10 @@ def mask_water(data, openpoints):
     arr = np.squeeze(data)
     # If truly 3D, pick surface (or any other) layer
     if arr.ndim == 3:
-        arr = arr[-1, :, :]
+        if map == "layer":
+            arr = arr[nlayer, :, :]
+        else: #if map == "surface":
+            arr = arr[-1, :, :]
     return np.where(openpoints == 0, np.nan, arr)
 
 
@@ -101,13 +108,6 @@ vector_index = index_by_time(vector_files) if show_vectors else {}
 with h5py.File(scalar_files[0], "r") as h5f:
     X = h5f["Grid"]["Longitude"][:]
     Y = h5f["Grid"]["Latitude"][:]
-    # if "WaterPoints2D" in h5f["Grid"]:
-        # water_points = np.squeeze(h5f["Grid"]["WaterPoints2D"][:])
-        # waterpoints_is_3d = False
-    # else:
-        # wp3 = np.squeeze(h5f["Grid"]["WaterPoints3D"][:])
-        # waterpoints_is_3d = (wp3.ndim == 3)
-        # water_points = wp3[-1, :, :] if waterpoints_is_3d else wp3
 
 # ----------------------------------------
 # SYNC TIMES & PREP FRAME CONTAINERS
@@ -135,7 +135,7 @@ for dt in all_times:
         openpoints = (sh["Grid"]["OpenPoints"][opname][:])
         
         dsname = f"{variable}_{stkey.split('_')[1]}"
-        tmp = sh["Results"][variable][dsname][:]
+        tmp = sh[group][variable][dsname][:]
         scalar_frame = mask_water(tmp, openpoints)
 
     # read vectors
@@ -147,8 +147,8 @@ for dt in all_times:
         
             Uds = f"{variable_vector[0]}_{vtkey.split('_')[1]}"
             Vds = f"{variable_vector[1]}_{vtkey.split('_')[1]}"
-            Utmp = vh["Results"][variable_vector[0]][Uds][:]
-            Vtmp = vh["Results"][variable_vector[1]][Vds][:]
+            Utmp = vh[group_vector][variable_vector[0]][Uds][:]
+            Vtmp = vh[group_vector][variable_vector[1]][Vds][:]
         Uf = mask_water(Utmp, openpoints)
         Vf = mask_water(Vtmp, openpoints)
     else:
@@ -161,14 +161,15 @@ for dt in all_times:
 # ----------------------------------------
 # COMPUTE MAP EXTENT & ZOOM
 # ----------------------------------------
-x_min, x_max = X.min(), X.max()
-y_min, y_max = Y.min(), Y.max()
-dx = (x_max - x_min) / X.shape[0]
-dy = (y_max - y_min) / Y.shape[0]
-extent = [
-    x_min - extent_cells*dx, x_max + extent_cells*dx,
-    y_min - extent_cells*dy, y_max + extent_cells*dy
-]
+if extent == None:
+    x_min, x_max = X.min(), X.max()
+    y_min, y_max = Y.min(), Y.max()
+    dx = (x_max - x_min) / X.shape[0]
+    dy = (y_max - y_min) / Y.shape[0]
+    extent = [
+        x_min - extent_cells*dx, x_max + extent_cells*dx,
+        y_min - extent_cells*dy, y_max + extent_cells*dy
+    ]
 def calculate_zoom_level(increase):
     lat_rng = extent[3] - extent[2]
     lon_rng = extent[1] - extent[0]
@@ -190,8 +191,24 @@ cimgt.GoogleTiles.get_image = _spoof
 # ----------------------------------------
 # INITIALIZE FIGURE
 # ----------------------------------------
-global_vmin = min(np.nanmin(f) for f in frames_data)
-global_vmax = max(np.nanmax(f) for f in frames_data)
+    # determine global color limits if not set
+if vmin is None:
+    vmin = min(np.nanmin(f) for f in frames_data)
+if vmax is None:
+    vmax = max(np.nanmax(f) for f in frames_data)
+
+# Read shapefile once (if provided)
+p = Path(shapefile_path)
+if p.exists():
+    gdf = gpd.read_file(shapefile_path)
+    # create a Cartopy ShapelyFeature for fast drawing with transform
+    shapefile_feature = ShapelyFeature(
+        gdf.geometry,
+        ccrs.PlateCarree(),
+        facecolor=shapefile_color,  # or shapefile_color if you want filled polygons
+        edgecolor=shapefile_color
+    )
+
 
 fig, ax = plt.subplots(
     figsize=(10,10),
@@ -204,15 +221,16 @@ ax.add_image(osm, zoom_level)
 quad = ax.pcolormesh(
     X, Y, frames_data[0],
     shading="auto", cmap=cmap,
-    vmin=global_vmin, vmax=global_vmax,
+    vmin=vmin, vmax=vmax,
     alpha=transparency_factor, zorder=2
 )
+
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.1, axes_class=plt.Axes)
 cbar = fig.colorbar(quad, cax=cax, orientation="vertical")
-cbar.set_label(label, labelpad=25, rotation=270, fontsize=16)
-cbar.ax.tick_params(labelsize=14)
-ax.set_title(f"{time_titles[0]} UTC", fontsize=18)
+cbar.set_label(label, labelpad=25, rotation=270, fontsize=fontsize_label)
+cbar.ax.tick_params(labelsize=fontsize_tick)
+ax.set_title(f"{time_titles[0]} UTC", fontsize=fontsize_title)
 
 # precompute cell centers for quiver
 Xc = (X[:-1,:-1] + X[:-1,1:] + X[1:,:-1] + X[1:,1:]) / 4.0
@@ -229,7 +247,7 @@ def update(i):
     ax.pcolormesh(
         X, Y, frames_data[i],
         shading="auto", cmap=cmap,
-        vmin=global_vmin, vmax=global_vmax,
+        vmin=vmin, vmax=vmax,
         alpha=transparency_factor, zorder=2
     )
     # draw vectors if available
@@ -243,6 +261,12 @@ def update(i):
             alpha=0.8, zorder=3
         )
     ax.set_title(f"{time_titles[i]} UTC", fontsize=18)
+    
+    if p.exists():
+        # add the feature 
+        artist = ax.add_feature(shapefile_feature, zorder=4, linewidth=1, alpha=shapefile_transparency_factor)
+        gdf.boundary.plot(ax=ax, color=shapefile_color, linewidth=1)
+
     return list(ax.collections)
 
 # ----------------------------------------

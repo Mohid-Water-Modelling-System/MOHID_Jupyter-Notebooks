@@ -22,4 +22,5 @@ dependencies:
   - utide
   - rasterio
   - geopy
+  - geopandas
   - jupyterlab

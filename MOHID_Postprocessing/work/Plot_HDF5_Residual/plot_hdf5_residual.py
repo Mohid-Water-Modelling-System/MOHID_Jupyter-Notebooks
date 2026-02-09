@@ -1,7 +1,7 @@
 import importlib
-import input_plot_hdf5_statistics
-importlib.reload(input_plot_hdf5_statistics)
-from input_plot_hdf5_statistics import *
+import input_plot_hdf5_residual
+importlib.reload(input_plot_hdf5_residual)
+from input_plot_hdf5_residual import *
 
 import os
 import glob
@@ -23,14 +23,9 @@ from PIL import Image
 from urllib.request import urlopen, Request
 import scipy.ndimage
 
-import rasterio
-from rasterio.transform import from_origin
-
 import geopandas as gpd
 from cartopy.feature import ShapelyFeature
 from pathlib import Path
-
-title = f'Percentil ' + str(percentil) + '_' + variable
 
 def collect_hdf5_paths(root, h5file, sd, ed):
     paths = []
@@ -97,58 +92,67 @@ def image_spoof(self, tile):
 sd = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
 ed = datetime.datetime.strptime(end_date_str,   "%Y-%m-%d").date()
 
-scalar_files = collect_hdf5_paths(backup_root, hdf5_file, sd, ed)
+vector_files = collect_hdf5_paths(backup_root, hdf5_file_vectors, sd, ed) 
 
-if not scalar_files:
-    raise RuntimeError(f"No scalar HDF5s in {hdf5_file} between {start_date_str} and {end_date_str}")
+vector_index = index_by_time(vector_files)
 
-scalar_index = index_by_time(scalar_files)
-
-all_times   = sorted(scalar_index.keys())
+all_times   = sorted(vector_index.keys())
 seen_times  = set()
-frames_data = []
+U_frames    = []
+V_frames    = []
 
 for dt in all_times:
     if dt in seen_times:
         continue
     seen_times.add(dt)
-    # pick the first scalar 
-    sfile, stkey = scalar_index[dt][0]
+    vmatch = vector_index.get(dt, [])
+    vfile, vtkey = (vmatch[0] if vmatch else (None, None))
     
-    # read scalar
-    with h5py.File(sfile, "r") as sh:
+    with h5py.File(vfile, "r") as vh:
+        
+        opname = f"OpenPoints_{vtkey.split('_')[1]}"
+        openpoints = (vh["Grid"]["OpenPoints"][opname][:])
+    
+        Uds = f"{variable_vector[0]}_{vtkey.split('_')[1]}"
+        Vds = f"{variable_vector[1]}_{vtkey.split('_')[1]}"
+        Utmp = vh["Results"][variable_vector[0]][Uds][:]
+        Vtmp = vh["Results"][variable_vector[1]][Vds][:]
+    Uf = mask_water(Utmp, openpoints)
+    Vf = mask_water(Vtmp, openpoints)
 
-        opname = f"OpenPoints_{stkey.split('_')[1]}"
-        openpoints = (sh["Grid"]["OpenPoints"][opname][:])
-        
-        dsname = f"{variable}_{stkey.split('_')[1]}"
-        tmp = sh["Results"][variable][dsname][:]
-        scalar_frame = mask_water(tmp, openpoints)
-        
-    frames_data.append(scalar_frame)
-    
+
+    U_frames.append(Uf); V_frames.append(Vf)
+
 # 1. Stack into a single 4D array of shape (n_frames, d1, d2, d3)
-stacked = np.stack(frames_data, axis=0)
+stacked_U = np.stack(U_frames, axis=0)
+stacked_V = np.stack(V_frames, axis=0)
 
-# 2. Compute percentile along the first axis
-percentil_3d = np.percentile(stacked, percentil, axis=0)
+# 2. Compute mean along the first axis
+mean_U_3d = np.mean(stacked_U, axis=0)
+mean_V_3d = np.mean(stacked_V, axis=0)
 
-if percentil_3d.ndim == 3:
-    if percentil_map == "max_value":
-        percentil_2D = percentil_3d.max(axis=0)
-    elif percentil_map == "layer":
-        percentil_2D = percentil_3d[nlayer, :, :]
-    else : # percentil_map = "surface":
-        percentil_2D = percentil_3d[-1,:,:]
+if mean_U_3d.ndim == 3:
+    if mean_map == "layer":
+        #if 1 <= nlayer <= stacked_U.shape[0]:
+        mean_U_2D = mean_U_3d[nlayer, :, :]
+        mean_V_2D = mean_V_3d[nlayer, :, :]
+        #else:
+        #    raise IndexError(f"nlayer {nlayer} out of range (1..{mean_U_3d.shape[0]})")
+    else : # mean_map = "surface":
+        mean_U_2D = mean_U_3d[-1,:,:]
+        mean_V_2D = mean_V_3d[-1,:,:]
 else:
-    percentil_2D = percentil_3d
-   
+    mean_U_2D = mean_U_3d
+    mean_V_2D = mean_V_3d
+    
 
-Z = np.array(percentil_2D, dtype=np.float32)
+U = np.array(mean_U_2D, dtype=np.float32)
+V = np.array(mean_V_2D, dtype=np.float32)
+Z = (U**2 + V**2)**0.5
 
 # INITIAL GRID
 # ----------------------------------------
-with h5py.File(scalar_files[0], "r") as h5f:
+with h5py.File(vector_files[0], "r") as h5f:
     X = h5f["Grid"]["Longitude"][:]
     Y = h5f["Grid"]["Latitude"][:]
     
@@ -172,7 +176,6 @@ def calculate_zoom_level(increase):
     return max(1, min(z + increase, 19))
 zoom_level = calculate_zoom_level(increase_zoom_level) 
 
-
 # Read shapefile once (if provided)
 p = Path(shapefile_path)
 if p.exists():
@@ -189,6 +192,7 @@ if p.exists():
 Fig = plt.figure(figsize=(15, 15))
 ax = plt.axes(projection=ccrs.PlateCarree())
 ax.set_extent(extent)
+
 
 ## Title
 ax.set_title(title, fontsize=fontsize_title) 
@@ -214,51 +218,23 @@ Yc = (Y[:-1,:-1] + Y[:-1,1:] + Y[1:,:-1] + Y[1:,1:]) / 4.0
 contour = ax.contour(Xc,Yc,Z[:,:],levels=countour_levels,colors='grey', transform=ccrs.PlateCarree())
 plt.clabel(contour, inline=False, fmt = '%2.1f', colors = 'white', fontsize=18) #contour line labels
 
+ax.quiver(
+    Xc[::skip_vector, ::skip_vector],
+    Yc[::skip_vector, ::skip_vector],
+    U[::skip_vector, ::skip_vector],
+    V[::skip_vector, ::skip_vector],
+    color=vector_color, scale=vector_scale,
+    alpha=0.8, zorder=3
+)
+
 if p.exists():
     # add the feature 
     artist = ax.add_feature(shapefile_feature, zorder=4, linewidth=1, alpha=shapefile_transparency_factor)
     gdf.boundary.plot(ax=ax, color=shapefile_color, linewidth=1)
-        
+    
 os.makedirs(out_dir, exist_ok=True)
 #%%
-figure_file = os.path.join(out_dir, f"{variable}_percentil_{percentil}.png")
+figure_file = os.path.join(out_dir, f"{title}.png")
 
 plt.savefig(figure_file, format='png', dpi=dpi, bbox_inches='tight')
     
-#Export to GeoTIFF
-nrows, ncols = Z.shape
-
-# Determine spatial extent and pixel size
-x_min, x_max = X.min(), X.max()
-y_min, y_max = Y.min(), Y.max()
-pixel_width  = (x_max - x_min) / (ncols  - 1)
-pixel_height = (y_max - y_min) / (nrows  - 1)
-
-# Build an affine transform
-transform = from_origin(
-    x_min - pixel_width/2,  # West edge  (shift half a pixel)
-    y_max + pixel_height/2, # North edge (shift half a pixel)
-    pixel_width,
-    pixel_height
-)
-
-# Flip the array so row 0 becomes north
-Z_raster = Z.T
-Z_raster = np.flipud(Z_raster)
-
-raster_file = os.path.join(out_dir, f"{variable}_percentil_{percentil}.tif")
-
-# Write GeoTIFF
-with rasterio.open(
-    raster_file,           # output filename
-    'w',
-    driver='GTiff',
-    height=nrows,
-    width=ncols,
-    count=1,                # one band of data
-    dtype=Z.dtype,
-    crs='EPSG:4326',        # replace with your CRS
-    transform=transform,
-) as dst:
-    dst.write(Z_raster, 1)         # write array into band 1
-
