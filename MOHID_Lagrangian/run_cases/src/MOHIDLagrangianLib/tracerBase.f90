@@ -41,9 +41,6 @@
         real(prec) :: bathymetry = MV           !< bathymetry value interpolated to the tracers location
         real(prec) :: dwz = MV                  !< thickness of the vertical cell
         real(prec) :: dist2bottom               !< tracer's distance to bottom
-        logical    :: beachPeriod               !< consecutive period of time (in seconds) that the tracer has been beached
-        integer    :: beachAreaId               !< beaching area Id where the tracer last beached
-        integer    :: beachedWaterLevel         !< Water level at the time the tracer was beachded
     end type tracer_state_class
 
     type :: tracer_class                   !<Type - The pure Lagrangian tracer class
@@ -76,7 +73,7 @@
     !---------------------------------------------------------------------------
     integer function getNumVars(self)
     class(tracer_class), intent(in) :: self
-    getNumVars = 18
+    getNumVars = 15
     end function getNumVars
 
     !---------------------------------------------------------------------------
@@ -103,9 +100,6 @@
     getStateArray(13) = self%now%bathymetry
     getStateArray(14) = self%now%dwz
     getStateArray(15) = self%now%dist2bottom
-    getStateArray(16) = self%now%beachPeriod
-    getStateArray(17) = self%now%beachAreaId
-    getStateArray(18) = self%now%beachedWaterLevel
     end function getStateArray
 
     !---------------------------------------------------------------------------
@@ -127,13 +121,11 @@
     self%now%diffusionVel%z = StateArray(9)
     self%now%usedMixingLenght = StateArray(10)
     self%now%age   = StateArray(11)
-    self%par%particulate = StateArray(12)
     self%now%bathymetry   = StateArray(13)
     self%now%dwz   = StateArray(14)
     self%now%dist2bottom = StateArray(15)
-    self%now%beachPeriod = StateArray(16)
-    self%now%beachAreaId = StateArray(17)
-    self%now%beachedWaterLevel = StateArray(18)
+    self%par%particulate = StateArray(12)
+    
     end subroutine setStateArray
 
     !---------------------------------------------------------------------------
@@ -187,9 +179,6 @@
     constructor%now%bathymetry = 0.0
     constructor%now%dwz = 0.0
     constructor%now%dist2bottom = 0.0
-    constructor%now%beachPeriod = 0.0
-    constructor%now%beachAreaId = 1
-    constructor%now%beachedWaterLevel = 0.0
     ! initialize var name list
     allocate(constructor%varName(varN))
     constructor%varName(1) = 'x'
@@ -207,8 +196,6 @@
     constructor%varName(13) = Globals%Var%bathymetry
     constructor%varName(14) = Globals%Var%dwz
     constructor%varName(15) = 'dist2bottom'
-    constructor%varName(16) = 'beachPeriod'
-    constructor%varName(17) = 'beachAreaId'
     end function constructor
 
     end module tracerBase_mod

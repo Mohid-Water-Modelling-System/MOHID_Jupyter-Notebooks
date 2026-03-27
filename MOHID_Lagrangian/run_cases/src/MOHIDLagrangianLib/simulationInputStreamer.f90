@@ -185,7 +185,6 @@
     type(string), allocatable, dimension(:) :: varList
     logical, allocatable, dimension(:) :: syntecticVar
     type(ncReader_class) :: ncReader
-    type(hdf5Reader_class) :: hdf5Reader
 
     allocate(varList(3))
     allocate(syntecticVar(3))
@@ -197,13 +196,7 @@
     syntecticVar(3) = .false.
 
     !need to send to different readers here if different file formats
-    if (fileName%extension() == '.nc' .or. fileName%extension() == '.nc4') then
-        !Call reader
-        getWindsFile = ncReader%getFullFile(fileName, varList, syntecticVar)
-    else
-        call Globals%SimDefs%setInputFileType(.true.)
-        getWindsFile = hdf5Reader%getFullFile(fileName, varList, syntecticVar)
-    endif
+    getWindsFile = ncReader%getFullFile(fileName, varList, syntecticVar)
 
     end function getWindsFile
 
@@ -220,7 +213,6 @@
     type(string), allocatable, dimension(:) :: varList
     logical, allocatable, dimension(:) :: syntecticVar
     type(ncReader_class) :: ncReader
-    type(hdf5Reader_class) :: hdf5Reader
     allocate(varList(5))
     allocate(syntecticVar(5))
     varList(1) = Globals%Var%vsdx
@@ -235,13 +227,7 @@
     syntecticVar(5) = .false.
     
     !need to send to different readers here if different file formats
-    if (fileName%extension() == '.nc' .or. fileName%extension() == '.nc4') then
-        !Call reader
-        getWavesFile = ncReader%getFullFile(fileName, varList, syntecticVar)
-    else
-        call Globals%SimDefs%setInputFileType(.true.)
-        getWavesFile = hdf5Reader%getFullFile(fileName, varList, syntecticVar)
-    endif
+    getWavesFile = ncReader%getFullFile(fileName, varList, syntecticVar)
 
     end function getWavesFile
     
@@ -258,7 +244,6 @@
     type(string), allocatable, dimension(:) :: varList
     logical, allocatable, dimension(:) :: syntecticVar
     type(ncReader_class) :: ncReader
-    type(hdf5Reader_class) :: hdf5Reader
 
     allocate(varList(3))
     allocate(syntecticVar(3))
@@ -270,14 +255,7 @@
     syntecticVar(3) = .false.
 
     !need to send to different readers here if different file formats
-    if (fileName%extension() == '.nc' .or. fileName%extension() == '.nc4') then
-        !Call reader
-        getWaterPropsFile = ncReader%getFullFile(fileName, varList, syntecticVar)
-    else
-        call Globals%SimDefs%setInputFileType(.true.)
-        getWaterPropsFile = hdf5Reader%getFullFile(fileName, varList, syntecticVar)
-    endif
-    
+    getWaterPropsFile = ncReader%getFullFile(fileName, varList, syntecticVar)
     !Fill all closed points with the closest value, so that the model can perform the 4D interpolation near land.
     call getWaterPropsFile%fillClosedPoints(varList)
 
