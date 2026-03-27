@@ -47,11 +47,13 @@ def download_era5(min_lon,max_lon,min_lat,max_lat,next_start_date,next_end_date)
 
     # Extract days across months correctly
     days = []
+    date_range = []
     current_date = next_start_date
     while current_date <= next_end_date:
         days.append(str(current_date.day))
+        date_range.append(current_date)
         current_date += datetime.timedelta(days=1)
-        
+   
     dataset = "reanalysis-era5-single-levels"
     request = {
         "product_type": ["reanalysis"],
@@ -68,8 +70,8 @@ def download_era5(min_lon,max_lon,min_lat,max_lat,next_start_date,next_end_date)
                     'total_cloud_cover',
                     'total_precipitation',
         ],
-        "year": sorted([str(next_start_date.year), str(next_end_date.year)]),
-        "month": sorted([str(next_start_date.month), str(next_end_date.month)]),
+        "year": list(set(str(d.year) for d in date_range)),
+        "month": list(set(f"{d.month:02d}" for d in date_range)),
         "day": days,
         "time": [
             "00:00", "01:00", "02:00",
