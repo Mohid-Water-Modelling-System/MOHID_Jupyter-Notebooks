@@ -157,7 +157,6 @@ def centers_to_bounds(centers):
     bounds[1:-1] = c[:-1] + d_safe / 2.0
     return bounds
 
-
 # -----------------------------
 # MAIN SCRIPT
 # -----------------------------
@@ -269,13 +268,15 @@ if __name__ == "__main__":
             z2d_filled[nan_mask] = rep[nan_mask]
         z2d = z2d_filled
 
-        # compute per-timestep centers and bounds and store them
         nz_data_t = slice2d.shape[0]
-        z_centers_t = np.nanmean(z2d[:nz_data_t, :], axis=1)
+
+        # keep full 2D vertical structure
+        z_centers_2d = z2d[:nz_data_t, :]
+
         x_centers_t = distance_t
 
         x_bounds_t = centers_to_bounds(x_centers_t)
-        y_bounds_t = centers_to_bounds(z_centers_t)
+        y_bounds_t = z2d
 
         vertical_slices.append(slice2d)
         depths.append(z2d)
@@ -320,10 +321,14 @@ if __name__ == "__main__":
 
             # x (distance) and z (depth) centers for arrows
             x_centers_ds = distance_t[cols_ds]
-            z_centers_levels = np.nanmean(z2d[:nz_data_t, :], axis=1)
-            y_centers_ds = z_centers_levels[zs_ds]
+            
+            y_bounds_ds = y_bounds_t  # already computed earlier
 
-            Xq, Yq = np.meshgrid(x_centers_ds, y_centers_ds)
+            y_centers_full = 0.5 * (y_bounds_ds[:-1, :] + y_bounds_ds[1:, :])
+            y_centers_ds = y_centers_full[zs_ds[:, None], cols_ds[None, :]]
+
+            Xq = np.tile(x_centers_ds, (y_centers_ds.shape[0], 1))
+            Yq = y_centers_ds
             Uq = u_along[zs_ds[:, None], cols_ds[None, :]]
             Wq = Wslice[zs_ds[:, None], cols_ds[None, :]]
 
@@ -354,17 +359,41 @@ if __name__ == "__main__":
 
     nz_data, ncols = data2d.shape
 
-    if y_bounds_list[first_idx].size != nz_data + 1:
-        raise RuntimeError(f"After alignment y_bounds length {y_bounds_list[first_idx].size} != nz+1 ({nz_data+1}).")
+    yb = y_bounds_list[first_idx]
+
+    if yb.shape[0] != nz_data + 1:
+        raise RuntimeError(
+            f"y_bounds vertical dimension {yb.shape[0]} != nz+1 ({nz_data+1})"
+        )
+
+    if yb.shape[1] != ncols:
+        raise RuntimeError(
+            f"y_bounds horizontal dimension {yb.shape[1]} != ncols ({ncols})"
+        )
     if x_bounds_list[first_idx].size != ncols + 1:
         raise RuntimeError(f"x_bounds length {x_bounds_list[first_idx].size} != ncols+1 ({ncols+1}).")
 
     def make_mesh(ax, x_bounds, y_bounds, data2d, **pcm_kwargs):
         """
-        Create a pcolormesh on ax using bounds arrays and 2D data.
-        x_bounds: (ncols+1,), y_bounds: (nz+1,), data2d: (nz, ncols)
+        x_bounds: (nx+1,)
+        y_bounds: (nz+1, nx)
+        data2d:   (nz, nx)
         """
-        pcm = ax.pcolormesh(x_bounds, y_bounds, data2d, **pcm_kwargs)
+
+        nz, nx = data2d.shape
+
+        # --- X: expand to (nz+1, nx+1)
+        Xb = np.tile(x_bounds, (nz + 1, 1))
+
+        # --- Y: expand from (nz+1, nx) → (nz+1, nx+1)
+        Yb = np.empty((nz + 1, nx + 1))
+
+        Yb[:, :-1] = y_bounds
+
+        # extrapolate last column instead of copying
+        Yb[:, -1] = y_bounds[:, -1] + (y_bounds[:, -1] - y_bounds[:, -2])
+
+        pcm = ax.pcolormesh(Xb, Yb, data2d, **pcm_kwargs)
         return pcm
 
     # --- prepare figure and initial frame (frame 0) ---
@@ -385,8 +414,9 @@ if __name__ == "__main__":
     Xb0 = x_bounds_list[0]
     Yb0 = y_bounds_list[0]
     x_centers0 = 0.5 * (Xb0[:-1] + Xb0[1:])
-    y_centers0 = 0.5 * (Yb0[:-1] + Yb0[1:])
-    Xg0, Yg0 = np.meshgrid(x_centers0, y_centers0)
+    y_centers0 = 0.5 * (Yb0[:-1, :] + Yb0[1:, :])  # (nz, nx)
+    Xg0 = np.tile(x_centers0, (y_centers0.shape[0], 1))
+    Yg0 = y_centers0
 
     contour_set = ax.contour(
         Xg0, Yg0, vertical_slices[0],
@@ -463,11 +493,12 @@ if __name__ == "__main__":
 
         # contours
         x_centers = 0.5 * (x_b[:-1] + x_b[1:])
-        y_centers = 0.5 * (y_b[:-1] + y_b[1:])
+        y_centers = 0.5 * (y_b[:-1, :] + y_b[1:, :])  # (nz, nx)
         if x_centers.size == 0 or y_centers.size == 0:
             contour_set = None
         else:
-            Xg, Yg = np.meshgrid(x_centers, y_centers)
+            Xg = np.tile(x_centers, (y_centers.shape[0], 1))
+            Yg = y_centers
             contour_set = ax.contour(
                 Xg, Yg, data2d,
                 levels=contour_levels,
