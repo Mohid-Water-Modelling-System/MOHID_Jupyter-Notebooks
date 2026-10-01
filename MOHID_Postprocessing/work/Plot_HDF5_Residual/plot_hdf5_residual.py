@@ -17,7 +17,7 @@ import cartopy.io.img_tiles as cimgt
 from datetime import datetime as dt
 
 import PIL
-#%% Usar este pada adicionar outras fontes de mapas de fundo como o:  OSM  ou o: QuadtreeTiles
+#%% Use this to add other background map sources such as OSM or QuadtreeTiles
 import io
 from PIL import Image
 from urllib.request import urlopen, Request
@@ -202,30 +202,76 @@ osm_img = cimgt.GoogleTiles(style='satellite')
 #osm_img = cimgt.GoogleTiles(style='street')
 ax.add_image(osm_img, zoom_level)
 
-SA = ax.pcolormesh(X,Y,Z[:,:],vmin = vmin,vmax = vmax,cmap=cmap)
-
-## Colorbar
-cbar = plt.colorbar(SA, shrink=0.75, pad=0.03) 
-cbar.set_label(label,labelpad=25, rotation=270,fontsize=fontsize_label)
-cbar.ax.tick_params(labelsize=fontsize_tick)
-
-
 # precompute cell centers for quiver
 Xc = (X[:-1,:-1] + X[:-1,1:] + X[1:,:-1] + X[1:,1:]) / 4.0
 Yc = (Y[:-1,:-1] + Y[:-1,1:] + Y[1:,:-1] + Y[1:,1:]) / 4.0
 
-## Countour
-contour = ax.contour(Xc,Yc,Z[:,:],levels=countour_levels,colors='grey', transform=ccrs.PlateCarree())
-plt.clabel(contour, inline=False, fmt = '%2.1f', colors = 'white', fontsize=18) #contour line labels
+# ----------------------------------------
+# VECTORS (subsampling + length scaling)
+# ----------------------------------------
+def vector_length(m):
+    """Map velocity magnitude to arrow length according to vector_length_mode."""
+    if vector_length_mode == 'normalized':
+        return np.where(np.isnan(m), np.nan, 1.0)
+    if vector_length_mode == 'power':
+        return m ** vector_power
+    if vector_length_mode == 'log':
+        return np.log1p(m / vector_vref)
+    return m  # 'linear'
 
-ax.quiver(
-    Xc[::skip_vector, ::skip_vector],
-    Yc[::skip_vector, ::skip_vector],
-    U[::skip_vector, ::skip_vector],
-    V[::skip_vector, ::skip_vector],
-    color=vector_color, scale=vector_scale,
-    alpha=0.8, zorder=3
-)
+Xs = Xc[::skip_vector, ::skip_vector]
+Ys = Yc[::skip_vector, ::skip_vector]
+Us = U[::skip_vector, ::skip_vector]
+Vs = V[::skip_vector, ::skip_vector]
+Ms = np.hypot(Us, Vs)                      # magnitude at vector points
+
+Mdiv = np.where(Ms > 0, Ms, 1.0)           # avoid division by zero
+Ls = vector_length(Ms)                     # transformed arrow length
+Uq = Us / Mdiv * Ls                        # keep direction, rescale length
+Vq = Vs / Mdiv * Ls
+
+norm = plt.Normalize(vmin=vmin, vmax=vmax)
+
+if plot_mode == 'colored_vectors':
+    # Vectors colored by magnitude, without the field colormap
+    Q = ax.quiver(
+        Xs, Ys, Uq, Vq, Ms,
+        cmap=cmap, norm=norm, scale=vector_scale,
+        alpha=transparency_factor, zorder=3,
+        transform=ccrs.PlateCarree()
+    )
+    SA = Q
+else:  # plot_mode == 'field'
+    # Magnitude colormap + single-color vectors
+    SA = ax.pcolormesh(X, Y, Z[:,:], norm=norm, cmap=cmap,
+                       alpha=transparency_factor, transform=ccrs.PlateCarree())
+    Q = ax.quiver(
+        Xs, Ys, Uq, Vq,
+        color=vector_color, scale=vector_scale,
+        alpha=0.8, zorder=3,
+        transform=ccrs.PlateCarree()
+    )
+
+## Reference arrow (not meaningful when all arrows have the same length)
+if quiverkey_speed is not None and vector_length_mode != 'normalized':
+    key_len = float(vector_length(np.array(quiverkey_speed)))
+    ax.quiverkey(
+        Q, quiverkey_pos[0], quiverkey_pos[1], key_len,
+        f"{quiverkey_speed:g} m/s", labelpos='E', coordinates='axes',
+        color=quiverkey_color, labelcolor=quiverkey_color,
+        fontproperties={'size': fontsize_tick}
+    )
+
+## Colorbar
+cbar = plt.colorbar(SA, ax=ax, shrink=0.75, pad=0.03)
+cbar.set_label(label, labelpad=25, rotation=270, fontsize=fontsize_label)
+cbar.ax.tick_params(labelsize=fontsize_tick)
+
+## Contour (only if levels are defined)
+if len(countour_levels) > 0:
+    contour = ax.contour(Xc, Yc, Z[:,:], levels=countour_levels, colors='grey',
+                         transform=ccrs.PlateCarree())
+    plt.clabel(contour, inline=False, fmt='%2.1f', colors='white', fontsize=18)
 
 if p.exists():
     # add the feature 
