@@ -8,6 +8,8 @@ import glob
 import h5py
 import datetime
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')   # non-interactive backend: figures are only saved to file (no Qt needed)
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import matplotlib.ticker as mticker
@@ -15,6 +17,7 @@ import matplotlib.patheffects as path_effects
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import cartopy.io.img_tiles as cimgt
 from datetime import datetime as dt
+dt_now = dt.now()
 
 import PIL
 #%% Use this to add other background map sources such as OSM or QuadtreeTiles
@@ -284,3 +287,172 @@ figure_file = os.path.join(out_dir, f"{title}.png")
 
 plt.savefig(figure_file, format='png', dpi=dpi, bbox_inches='tight')
     
+#%%
+# ----------------------------------------
+# EXPORT FOR QGIS
+# ----------------------------------------
+out_base = os.path.join(out_dir, title.replace(' ', '_'))
+
+if export_qgis_points:
+    sk = qgis_skip_vector
+    lon_p = Xc[::sk, ::sk].ravel()
+    lat_p = Yc[::sk, ::sk].ravel()
+    u_p = U[::sk, ::sk].ravel()
+    v_p = V[::sk, ::sk].ravel()
+    ok = np.isfinite(u_p) & np.isfinite(v_p)
+    u_p, v_p, lon_p, lat_p = u_p[ok], v_p[ok], lon_p[ok], lat_p[ok]
+    speed_p = np.hypot(u_p, v_p)
+    # Azimuth the current flows towards, clockwise from north (QGIS marker rotation convention)
+    dir_p = np.mod(np.degrees(np.arctan2(u_p, v_p)), 360.0)
+
+    gdf_pts = gpd.GeoDataFrame(
+        {'U': u_p.astype(float), 'V': v_p.astype(float),
+         'speed': speed_p.astype(float), 'dir': dir_p.astype(float)},
+        geometry=gpd.points_from_xy(lon_p, lat_p),
+        crs='EPSG:4326'
+    )
+    gpkg_file = out_base + '_vectors.gpkg'
+    gdf_pts.to_file(gpkg_file, layer='vectors', driver='GPKG')
+    print(f'Points written: {gpkg_file} ({len(gdf_pts)} features)')
+
+def regular_grid(lon2d, lat2d, fields):
+    """
+    Check whether the cell-center grid is a regular lon/lat grid.
+    Returns (is_regular, lon_1d, lat_1d, fields) with longitude along axis 1
+    and latitude increasing along axis 0 (south -> north).
+    """
+    lon_c, lat_c = lon2d, lat2d
+    # Make longitude vary along columns (axis 1)
+    if np.ptp(lon_c[:, 0]) > np.ptp(lon_c[0, :]):
+        lon_c, lat_c = lon_c.T, lat_c.T
+        fields = [f.T for f in fields]
+    lon_1d, lat_1d = lon_c[0, :], lat_c[:, 0]
+    dlon, dlat = np.diff(lon_1d), np.diff(lat_1d)
+    is_regular = (np.allclose(lon_c, lon_1d[None, :]) and np.allclose(lat_c, lat_1d[:, None])
+                  and np.allclose(dlon, dlon.mean(), rtol=1e-3)
+                  and np.allclose(dlat, dlat.mean(), rtol=1e-3))
+    # Latitude increasing (south -> north)
+    if lat_1d[-1] < lat_1d[0]:
+        lat_1d = lat_1d[::-1]
+        lat_c = lat_c[::-1, :]
+        lon_c = lon_c[::-1, :]
+        fields = [f[::-1, :] for f in fields]
+    return is_regular, lon_1d, lat_1d, lon_c, lat_c, fields
+
+Dir = np.mod(np.degrees(np.arctan2(U, V)), 360.0)   # direction towards, clockwise from north
+is_reg, lon_1d, lat_1d, lon_2d, lat_2d, (U_g, V_g, Z_g, D_g) = regular_grid(Xc, Yc, [U, V, Z, Dir])
+
+if export_qgis_raster:
+    try:
+        import rasterio
+        from rasterio.transform import from_origin
+    except ImportError:
+        print('rasterio not installed: GeoTIFF export skipped (pip install rasterio)')
+    else:
+        if not is_reg:
+            print('Grid is not a regular lon/lat grid: GeoTIFF export skipped (use the GeoPackage points)')
+        else:
+            # GeoTIFF rows must go from north to south
+            bands = [b[::-1, :] for b in (U_g, V_g, Z_g)]
+            lat_top = lat_1d[::-1]
+            res_x = abs(np.diff(lon_1d).mean())
+            res_y = abs(np.diff(lat_1d).mean())
+            transform = from_origin(lon_1d[0] - res_x / 2, lat_top[0] + res_y / 2, res_x, res_y)
+            tif_file = out_base + '_UV.tif'
+            with rasterio.open(
+                tif_file, 'w', driver='GTiff',
+                height=bands[0].shape[0], width=bands[0].shape[1], count=3,
+                dtype='float32', crs='EPSG:4326', transform=transform, nodata=np.nan
+            ) as dst:
+                for i, (b, name) in enumerate(zip(bands, ['U', 'V', 'speed']), start=1):
+                    dst.write(np.asarray(b, dtype=np.float32), i)
+                    dst.set_band_description(i, name)
+            print(f'Raster written: {tif_file}')
+
+if export_netcdf:
+    try:
+        import netCDF4
+    except ImportError:
+        print('netCDF4 not installed: NetCDF export skipped (pip install netCDF4)')
+    else:
+        nc_file = out_base + '_UV.nc'
+        fill = np.float32(-9999.0)
+        t0, t1 = all_times[0], all_times[-1]          # averaging period
+        t_ref = datetime.datetime(t0.year, t0.month, t0.day)
+        t_units = f"seconds since {t_ref:%Y-%m-%d %H:%M:%S}"
+        t_mid = t0 + (t1 - t0) / 2
+
+        with netCDF4.Dataset(nc_file, 'w', format='NETCDF4') as nc:
+            # --- global attributes
+            nc.Conventions = 'CF-1.8'
+            nc.title = title
+            nc.source = 'MOHID Water - ' + hdf5_file_vectors
+            nc.history = f'Created {dt_now:%Y-%m-%d %H:%M} by plot_hdf5_residual.py'
+            nc.comment = (f'Time-mean of {len(U_frames)} outputs between {t0:%Y-%m-%d %H:%M} '
+                          f'and {t1:%Y-%m-%d %H:%M}; layer: '
+                          + (f'{nlayer}' if mean_map == 'layer' else 'surface'))
+            nc.time_coverage_start = f'{t0:%Y-%m-%dT%H:%M:%S}'
+            nc.time_coverage_end = f'{t1:%Y-%m-%dT%H:%M:%S}'
+
+            # --- dimensions and coordinates
+            nc.createDimension('time', None)
+            if is_reg:
+                nc.createDimension('lat', len(lat_1d))
+                nc.createDimension('lon', len(lon_1d))
+                lat_v = nc.createVariable('lat', 'f8', ('lat',))
+                lon_v = nc.createVariable('lon', 'f8', ('lon',))
+                lat_v[:] = lat_1d
+                lon_v[:] = lon_1d
+                lat_v.axis, lon_v.axis = 'Y', 'X'
+                hdims = ('lat', 'lon')
+            else:
+                nc.createDimension('y', lat_2d.shape[0])
+                nc.createDimension('x', lat_2d.shape[1])
+                lat_v = nc.createVariable('lat', 'f8', ('y', 'x'))
+                lon_v = nc.createVariable('lon', 'f8', ('y', 'x'))
+                lat_v[:] = lat_2d
+                lon_v[:] = lon_2d
+                hdims = ('y', 'x')
+                print('Grid is curvilinear: NetCDF written with 2D lat/lon '
+                      '(QGIS mesh layers may not open it; check before using)')
+            lat_v.standard_name, lat_v.long_name, lat_v.units = 'latitude', 'latitude', 'degrees_north'
+            lon_v.standard_name, lon_v.long_name, lon_v.units = 'longitude', 'longitude', 'degrees_east'
+
+            time_v = nc.createVariable('time', 'f8', ('time',))
+            time_v.standard_name = 'time'
+            time_v.units = t_units
+            time_v.calendar = 'standard'
+            time_v.axis = 'T'
+            time_v[:] = netCDF4.date2num([t_mid], t_units, 'standard')
+            # No time_bnds variable: QGIS/MDAL treats it as a data grid and then ignores
+            # the real variables. The averaging period is stored in global attributes.
+
+            crs_v = nc.createVariable('crs', 'i4')
+            crs_v.grid_mapping_name = 'latitude_longitude'
+            crs_v.longitude_of_prime_meridian = 0.0
+            crs_v.semi_major_axis = 6378137.0
+            crs_v.inverse_flattening = 298.257223563
+            crs_v.crs_wkt = 'EPSG:4326'
+
+            # --- data variables
+            def add_var(name, data, std_name, long_name, units):
+                var = nc.createVariable(name, 'f4', ('time',) + hdims,
+                                        fill_value=fill, zlib=True, complevel=4)
+                var.standard_name = std_name
+                var.long_name = long_name
+                var.units = units
+                var.grid_mapping = 'crs'
+                var.cell_methods = 'time: mean'
+                if not is_reg:
+                    var.coordinates = 'lat lon'
+                arr = np.where(np.isfinite(data), data, fill).astype(np.float32)
+                var[0, :, :] = arr
+
+            add_var(nc_u_name, U_g, 'eastward_sea_water_velocity',
+                    'u-component of sea water velocity', 'm s-1')
+            add_var(nc_v_name, V_g, 'northward_sea_water_velocity',
+                    'v-component of sea water velocity', 'm s-1')
+            add_var('speed', Z_g, 'sea_water_speed', 'sea water speed', 'm s-1')
+            add_var('direction', D_g, 'direction_of_sea_water_velocity',
+                    'direction the current flows towards (clockwise from north)', 'degree')
+        print(f'NetCDF written: {nc_file}')
