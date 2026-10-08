@@ -18,10 +18,22 @@ extent_cells      = 1
 increase_zoom_level = 3
 transparency_factor = 1.0
 dpi               = 150
-cmap               = 'jet'
+# Diverging colormap: blue = B < A (less), white = no change, red = B > A (more).
+# Use symmetric limits (vmin = -vmax) so that zero falls on the white center.
+# Other options: 'RdBu' (reversed colors), 'coolwarm', 'BrBG', 'PuOr_r'.
+cmap               = 'RdBu_r'
 shapefile_path     = r'None'
 shapefile_color     = 'black'
 shapefile_transparency_factor     = 0.5
 fontsize_label     = 16
 fontsize_title     = 18
 fontsize_tick     = 14
+
+# ----------------------------------------
+# GEOTIFF EXPORT
+# ----------------------------------------
+# export_geotiff = True -> one GeoTIFF per time step in <out_dir>/geotiff with the difference (B - A)
+#                          (requires rasterio and a regular lon/lat grid)
+# geotiff_include_scenarios = True -> also write scenarios A and B as bands 2 and 3
+export_geotiff            = True
+geotiff_include_scenarios = False

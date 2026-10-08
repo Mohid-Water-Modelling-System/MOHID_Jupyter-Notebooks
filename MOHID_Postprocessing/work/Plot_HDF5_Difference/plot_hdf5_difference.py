@@ -16,9 +16,10 @@ import datetime
 from urllib.request import Request, urlopen
 from PIL import Image
 
+import matplotlib as mpl
+mpl.use('Agg')   # non-interactive backend: figures are only saved to file (no Qt needed)
 from matplotlib import pyplot as plt, animation
 import imageio_ffmpeg
-import matplotlib as mpl
 
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
@@ -32,9 +33,40 @@ from cartopy.feature import ShapelyFeature
 from pathlib import Path
          
 
+import re
+
+# ----------------------------------------
+# DEFAULTS FOR OPTIONS MISSING IN THE INPUT FILE
+# ----------------------------------------
+globals().setdefault('export_geotiff', False)
+globals().setdefault('geotiff_include_scenarios', False)
+
 # ----------------------------------------
 # UTILITY FUNCTIONS
 # ----------------------------------------
+def regular_grid(lon2d, lat2d, fields):
+    """
+    Check whether the cell-center grid is a regular lon/lat grid.
+    fields are arrays whose LAST TWO axes are the grid (2D or 3D time stacks).
+    Returns (is_regular, lon_1d, lat_1d, fields) with longitude along the last
+    axis and latitude increasing (south -> north).
+    """
+    lon_c, lat_c = lon2d, lat2d
+    # Make longitude vary along columns
+    if np.ptp(lon_c[:, 0]) > np.ptp(lon_c[0, :]):
+        lon_c, lat_c = lon_c.T, lat_c.T
+        fields = [np.swapaxes(f, -1, -2) for f in fields]
+    lon_1d, lat_1d = lon_c[0, :], lat_c[:, 0]
+    dlon, dlat = np.diff(lon_1d), np.diff(lat_1d)
+    is_regular = (np.allclose(lon_c, lon_1d[None, :]) and np.allclose(lat_c, lat_1d[:, None])
+                  and np.allclose(dlon, dlon.mean(), rtol=1e-3)
+                  and np.allclose(dlat, dlat.mean(), rtol=1e-3))
+    # Latitude increasing (south -> north)
+    if lat_1d[-1] < lat_1d[0]:
+        lat_1d = lat_1d[::-1]
+        fields = [f[..., ::-1, :] for f in fields]
+    return is_regular, lon_1d, lat_1d, fields
+
 def collect_hdf5_paths(root, h5file, sd, ed):
     paths = []
     for entry in os.scandir(root):
@@ -121,6 +153,9 @@ with h5py.File(scalar_files_A[0], "r") as h5f:
 # ----------------------------------------
 
 frames_data = []
+frames_A    = []
+frames_B    = []
+frame_times = []
 time_titles = []
     
 # ----------------------------------------
@@ -159,7 +194,65 @@ for dt in common_times:
     )
 
     frames_data.append(diff)
+    if export_geotiff and geotiff_include_scenarios:
+        frames_A.append(frame_A)
+        frames_B.append(frame_B)
+    frame_times.append(dt)
     time_titles.append(dt.strftime("%d/%m/%Y %H:%M"))
+
+# ----------------------------------------
+# OUTPUT FOLDER
+# ----------------------------------------
+date_span = f"{sd.strftime('%Y%m%d')}_{ed.strftime('%Y%m%d')}"
+out_dir   = os.path.join(figures_folder, date_span, variable)
+os.makedirs(out_dir, exist_ok=True)
+var_safe  = re.sub(r'\W+', '_', variable).strip('_')
+
+# ----------------------------------------
+# EXPORT GEOTIFF (one file per time step)
+# ----------------------------------------
+if export_geotiff:
+    try:
+        import rasterio
+        from rasterio.transform import from_origin
+    except ImportError:
+        print('rasterio not installed: GeoTIFF export skipped (pip install rasterio)')
+    else:
+        # cell centers
+        Xc = (X[:-1,:-1] + X[:-1,1:] + X[1:,:-1] + X[1:,1:]) / 4.0
+        Yc = (Y[:-1,:-1] + Y[:-1,1:] + Y[1:,:-1] + Y[1:,1:]) / 4.0
+
+        stacks = [np.stack(frames_data, axis=0)]
+        names = [f'{var_safe}_difference_B_minus_A']
+        if geotiff_include_scenarios:
+            stacks += [np.stack(frames_A, axis=0), np.stack(frames_B, axis=0)]
+            names += [f'{var_safe}_A', f'{var_safe}_B']
+
+        is_reg, lon_1d, lat_1d, stacks_g = regular_grid(Xc, Yc, stacks)
+        if not is_reg:
+            print('Grid is not a regular lon/lat grid: GeoTIFF export skipped')
+        else:
+            tif_dir = os.path.join(out_dir, 'geotiff')
+            os.makedirs(tif_dir, exist_ok=True)
+            res_x = abs(np.diff(lon_1d).mean())
+            res_y = abs(np.diff(lat_1d).mean())
+            # GeoTIFF rows go from north to south
+            transform = from_origin(lon_1d[0] - res_x / 2, lat_1d[-1] + res_y / 2, res_x, res_y)
+            for i, t in enumerate(frame_times):
+                bands = [st[i, ::-1, :] for st in stacks_g]
+                tif_file = os.path.join(tif_dir, f"{var_safe}_difference_{t:%Y%m%d_%H%M}.tif")
+                with rasterio.open(
+                    tif_file, 'w', driver='GTiff',
+                    height=bands[0].shape[0], width=bands[0].shape[1], count=len(bands),
+                    dtype='float32', crs='EPSG:4326', transform=transform, nodata=np.nan
+                ) as dst:
+                    for b_i, (b, name) in enumerate(zip(bands, names), start=1):
+                        dst.write(np.asarray(b, dtype=np.float32), b_i)
+                        dst.set_band_description(b_i, name)
+                    dst.update_tags(TIFFTAG_DATETIME=f"{t:%Y:%m:%d %H:%M:%S}",
+                                    scenario_A=root_A, scenario_B=root_B,
+                                    variable=variable, label=label)
+            print(f'GeoTIFFs written: {tif_dir} ({len(frame_times)} files, bands: {", ".join(names)})')
 # ----------------------------------------
 # COMPUTE MAP EXTENT & ZOOM
 # ----------------------------------------
@@ -194,10 +287,13 @@ cimgt.GoogleTiles.get_image = _spoof
 # INITIALIZE FIGURE
 # ----------------------------------------
     # determine global color limits if not set
-if vmin is None:
-    vmin = min(np.nanmin(f) for f in frames_data)
-if vmax is None:
-    vmax = max(np.nanmax(f) for f in frames_data)
+# symmetric around zero (no change = middle color of a diverging colormap)
+if vmin is None or vmax is None:
+    vlim = max(np.nanmax(np.abs(f)) for f in frames_data)
+    if vmin is None:
+        vmin = -vlim
+    if vmax is None:
+        vmax = vlim
 
 # Read shapefile once (if provided)
 p = Path(shapefile_path)
@@ -266,9 +362,6 @@ ani = animation.FuncAnimation(
     interval=500, blit=False
 )
 
-date_span = f"{sd.strftime('%Y%m%d')}_{ed.strftime('%Y%m%d')}"
-out_dir   = os.path.join(figures_folder, date_span, variable)
-os.makedirs(out_dir, exist_ok=True)
 mp4_path  = os.path.join(out_dir, f"{variable}.mp4")
 
 ani.save(mp4_path, writer=animation.FFMpegWriter(fps=2), dpi=dpi)
