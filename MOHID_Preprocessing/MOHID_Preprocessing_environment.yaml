@@ -1,7 +1,6 @@
 name: MOHID_Preprocessing_environment
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - cartopy
   - geopandas
